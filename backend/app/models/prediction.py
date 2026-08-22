@@ -14,4 +14,5 @@ class PredictionInDB(BaseModel):
     suspiciousFrames: list[str] = Field(default_factory=list)
     frameTimeline: list[dict] = Field(default_factory=list)
     heatmapFrames: list[str] = Field(default_factory=list)
+    modelsComparison: dict | None = None
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

@@ -16,6 +16,11 @@ export type Prediction = {
   suspiciousFrames: string[];
   heatmapFrames: string[];
   frameTimeline: { frameIndex: number; score: number }[];
+  modelsComparison?: {
+    CNN: { confidence: number; prediction: string; timeline: { frameIndex: number; score: number }[] };
+    LSTM: { confidence: number; prediction: string; timeline: { frameIndex: number; score: number }[] };
+    CNN_LSTM: { confidence: number; prediction: string; timeline: { frameIndex: number; score: number }[] };
+  };
   createdAt: string;
 };
 

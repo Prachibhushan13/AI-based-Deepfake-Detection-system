@@ -1,10 +1,11 @@
 import { Link, NavLink } from "react-router-dom";
-import { Activity, FileClock, LayoutDashboard, LogOut, ShieldAlert, UploadCloud } from "lucide-react";
+import { Activity, FileClock, LayoutDashboard, LogOut, ShieldAlert, UploadCloud, SplitSquareHorizontal } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/upload", label: "Analyze", icon: UploadCloud },
+  { to: "/compare", label: "Model Compare", icon: SplitSquareHorizontal },
   { to: "/analytics", label: "Analytics", icon: Activity },
   { to: "/history", label: "History", icon: FileClock },
   { to: "/admin", label: "Admin", icon: ShieldAlert },

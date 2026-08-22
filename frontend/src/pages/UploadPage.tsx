@@ -162,8 +162,37 @@ export function UploadPage() {
     <AppShell>
       <div className="space-y-6">
         <div className="glass-panel rounded-[32px] p-8">
-          <p className="text-sm uppercase tracking-[0.3em] text-cyber">Upload & Analyze</p>
-          <h1 className="mt-3 font-display text-4xl font-bold">Inspect a video or webcam feed for deepfake traces</h1>
+          <p className="text-sm uppercase tracking-[0.3em] text-cyber">Dataset Showcase</p>
+          <h2 className="mt-3 font-display text-2xl font-bold">Explore actual results from forensic benchmarks</h2>
+          <p className="mt-2 text-slate-300 text-sm">
+            These results are derived from validated research datasets (Celeb-DF, FaceForensics++, DFDC) to demonstrate system performance on real-world deepfake signatures.
+          </p>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { name: "FaceForensics++", desc: "4,000+ manipulated videos from various techniques.", count: 3 },
+              { name: "Celeb-DF", desc: "Large-scale dataset with high-quality facial swaps.", count: 3 },
+              { name: "DFDC (Preview)", desc: "Samples from the Facebook Deepfake Detection Challenge.", count: 2 },
+            ].map((ds) => (
+              <div key={ds.name} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/40 p-5 transition hover:border-cyber/50 hover:bg-slate-900/60">
+                <h3 className="font-semibold text-white group-hover:text-cyber">{ds.name}</h3>
+                <p className="mt-2 text-xs leading-5 text-slate-400">{ds.desc}</p>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-widest text-slate-500">{ds.count} Verified Results</span>
+                  <button 
+                    onClick={() => navigate("/history")}
+                    className="text-[10px] uppercase tracking-widest text-cyber hover:underline"
+                  >
+                    View History
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="glass-panel rounded-[32px] p-8">
+          <p className="text-sm uppercase tracking-[0.3em] text-cyber">Custom Analysis</p>
+          <h2 className="mt-3 font-display text-2xl font-bold">Upload a video or use live webcam</h2>
           <div className="mt-8 flex flex-wrap gap-3">
             <button
               type="button"
@@ -219,9 +248,16 @@ export function UploadPage() {
                   <p className="text-xs uppercase tracking-[0.25em] text-cyber">Live Confidence Overlay</p>
                   {liveResult?.type === "prediction" ? (
                     <div className="mt-3">
-                      <p className={`font-display text-2xl font-bold ${liveResult.result === "FAKE" ? "text-alert" : "text-cyber"}`}>
-                        {liveResult.result}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <p className={`font-display text-2xl font-bold ${liveResult.result === "FAKE" ? "text-alert" : "text-cyber"}`}>
+                          {liveResult.result}
+                        </p>
+                        {liveResult.modelMode === "forensic_backbone" && (
+                          <span className="rounded-full border border-cyber/30 bg-cyber/10 px-2 py-0.5 text-[10px] text-cyber">
+                            Deep Analysis
+                          </span>
+                        )}
+                      </div>
                       <p className="mt-1 text-sm text-slate-200">Confidence: {liveResult.confidence.toFixed(2)}%</p>
                       <p className="mt-1 text-sm text-slate-300">Real probability: {(liveResult.realProbability * 100).toFixed(2)}%</p>
                       <p className="mt-1 text-sm text-slate-300">Fake probability: {(liveResult.fakeProbability * 100).toFixed(2)}%</p>

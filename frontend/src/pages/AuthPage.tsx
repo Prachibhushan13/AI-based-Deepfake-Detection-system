@@ -10,15 +10,30 @@ export function AuthPage({ mode }: AuthPageProps) {
   const navigate = useNavigate();
   const { login, signup, loading } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (mode === "login") {
-      await login(form.email, form.password);
-    } else {
-      await signup(form.name, form.email, form.password);
+    setError(null);
+    try {
+      if (mode === "login") {
+        await login(form.email, form.password);
+      } else {
+        await signup(form.name, form.email, form.password);
+      }
+      navigate("/dashboard");
+    } catch (err: any) {
+      if (err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+        if (Array.isArray(detail)) {
+          setError(detail.map((d: any) => d.msg).join(", "));
+        } else {
+          setError(String(detail));
+        }
+      } else {
+        setError("An error occurred. Please try again.");
+      }
     }
-    navigate("/dashboard");
   };
 
   return (
@@ -28,6 +43,11 @@ export function AuthPage({ mode }: AuthPageProps) {
         <h1 className="mt-4 font-display text-4xl font-bold">
           {mode === "login" ? "Access the detection lab" : "Build your forensic workspace"}
         </h1>
+        {error && (
+          <div className="mt-4 rounded-xl bg-red-500/10 p-4 border border-red-500/20 text-red-400">
+            {error}
+          </div>
+        )}
         <div className="mt-8 space-y-4">
           {mode === "register" && (
             <input

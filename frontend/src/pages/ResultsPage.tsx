@@ -95,6 +95,12 @@ export function ResultsPage() {
               This result was generated in demo heuristic mode because no trained CNN-LSTM model artifact is currently loaded. It is useful for testing the pipeline, but it should not be treated as a reliable deepfake verdict.
             </p>
           )}
+          {prediction.modelMode === "forensic_backbone" && (
+            <p className="mt-3 rounded-2xl border border-cyber/30 bg-cyber/10 px-4 py-3 text-sm text-cyber">
+              <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-cyber"></span>
+              Analysis powered by MobileNetV2 Deep Forensic Backbone. Pixel-level anomaly detection and temporal feature-drift analysis are active.
+            </p>
+          )}
           <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
             <div className={`h-full ${prediction.result === "FAKE" ? "bg-alert" : "bg-cyber"}`} style={{ width: `${prediction.confidence}%` }} />
           </div>

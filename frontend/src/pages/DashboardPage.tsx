@@ -61,9 +61,9 @@ export function DashboardPage() {
       <div className="space-y-6">
         <div className="glass-panel rounded-[32px] p-8">
           <p className="text-sm uppercase tracking-[0.3em] text-cyber">Mission Control</p>
-          <h1 className="mt-3 font-display text-4xl font-bold">Deepfake detection operations dashboard</h1>
+          <h1 className="mt-3 font-display text-4xl font-bold">Forensic operations & dataset intelligence</h1>
           <p className="mt-3 max-w-2xl text-slate-300">
-            Monitor detection volume, review forensic outputs, and track temporal confidence drift across analyzed videos.
+            Monitor detection volume, review forensic outputs, and track temporal confidence drift across local uploads and established research datasets.
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">

@@ -14,6 +14,7 @@ class PredictionResponse(BaseModel):
     suspiciousFrames: list[str]
     heatmapFrames: list[str]
     frameTimeline: list[dict]
+    modelsComparison: dict | None = None
     createdAt: datetime
 
 

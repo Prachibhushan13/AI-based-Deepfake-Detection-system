@@ -40,4 +40,15 @@ def build_cnn_lstm_model(
         ],
     )
     return model
-
+def get_forensic_backbone() -> Model:
+    """
+    Returns a pre-trained MobileNetV2 model for feature extraction.
+    Used for deep forensic analysis when the primary CNN-LSTM artifact is missing.
+    """
+    base_model = tf.keras.applications.MobileNetV2(
+        input_shape=(settings.image_size, settings.image_size, 3),
+        include_top=False,
+        weights="imagenet",
+        pooling="avg",
+    )
+    return base_model
