@@ -21,6 +21,8 @@ export type Prediction = {
     LSTM: { confidence: number; prediction: string; timeline: { frameIndex: number; score: number }[] };
     CNN_LSTM: { confidence: number; prediction: string; timeline: { frameIndex: number; score: number }[] };
   };
+  facesAnalysis?: { faceId: number; fakeProbability: number; boundingBox?: number[] }[];
+  audioAnalysis?: { audioFakeProbability: number; lipSyncDiscrepancy: number };
   createdAt: string;
 };
 

@@ -19,4 +19,4 @@ backend/artifacts/*
 coverage/
 htmlcov/
 tmp/
-
+.mongo_data/

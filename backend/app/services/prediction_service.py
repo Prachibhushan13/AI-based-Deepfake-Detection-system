@@ -43,6 +43,8 @@ def analyze_video(file, user_id: str) -> dict:
         heatmapFrames=heatmap_paths,
         frameTimeline=inference["timeline"],
         modelsComparison=inference.get("modelsComparison"),
+        facesAnalysis=inference.get("facesAnalysis"),
+        audioAnalysis=inference.get("audioAnalysis"),
     )
     inserted = predictions_collection.insert_one(document.model_dump())
     created = predictions_collection.find_one({"_id": inserted.inserted_id})

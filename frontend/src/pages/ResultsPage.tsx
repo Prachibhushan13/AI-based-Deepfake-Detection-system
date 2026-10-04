@@ -130,6 +130,44 @@ export function ResultsPage() {
             </div>
           </div>
         </div>
+        {(prediction.audioAnalysis || (prediction.facesAnalysis && prediction.facesAnalysis.length > 0)) && (
+          <div className="grid gap-6 xl:grid-cols-2">
+            {prediction.audioAnalysis && (
+              <div className="glass-panel rounded-3xl p-6 border border-emerald-500/30">
+                <h3 className="font-display text-2xl font-semibold text-emerald-400">Audio & Lip-Sync</h3>
+                <p className="mt-4 text-slate-300">
+                  Multimodal analysis cross-references vocal signatures and visual speech.
+                </p>
+                <div className="mt-4 space-y-3">
+                  <div className="flex justify-between items-center rounded-xl bg-black/20 p-4">
+                    <span>Audio Fake Probability</span>
+                    <span className="font-mono text-emerald-400">{(prediction.audioAnalysis.audioFakeProbability * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between items-center rounded-xl bg-black/20 p-4">
+                    <span>Lip-Sync Discrepancy</span>
+                    <span className="font-mono text-emerald-400">{(prediction.audioAnalysis.lipSyncDiscrepancy * 100).toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {prediction.facesAnalysis && prediction.facesAnalysis.length > 0 && (
+              <div className="glass-panel rounded-3xl p-6 border border-indigo-500/30">
+                <h3 className="font-display text-2xl font-semibold text-indigo-400">Multi-Face Tracking</h3>
+                <p className="mt-4 text-slate-300">
+                  Independent assessment of distinct individuals within the scene.
+                </p>
+                <div className="mt-4 space-y-3">
+                  {prediction.facesAnalysis.map((face) => (
+                    <div key={face.faceId} className="flex justify-between items-center rounded-xl bg-black/20 p-4">
+                      <span>Face ID #{face.faceId}</span>
+                      <span className="font-mono text-indigo-400">{(face.fakeProbability * 100).toFixed(1)}% Fake</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <ConfidenceChart data={prediction.frameTimeline} />
         <div className="glass-panel rounded-3xl p-6">
           <h3 className="font-display text-2xl font-semibold">Detection Timeline Explained</h3>

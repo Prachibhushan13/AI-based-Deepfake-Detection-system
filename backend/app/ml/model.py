@@ -52,3 +52,29 @@ def get_forensic_backbone() -> Model:
         pooling="avg",
     )
     return base_model
+
+def build_xception_model(image_size: int = 299) -> Model:
+    """
+    Builds the XceptionNet baseline deepfake classification model (FaceForensics++ approach).
+    """
+    base_model = tf.keras.applications.Xception(
+        include_top=False,
+        weights="imagenet",
+        input_shape=(image_size, image_size, 3),
+        pooling="avg",
+    )
+    base_model.trainable = False
+    
+    inputs = layers.Input(shape=(image_size, image_size, 3))
+    x = base_model(inputs)
+    x = layers.Dense(512, activation="relu")(x)
+    x = layers.Dropout(0.5)(x)
+    outputs = layers.Dense(1, activation="sigmoid")(x)
+    
+    model = Model(inputs=inputs, outputs=outputs, name="xception_baseline")
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(1e-4),
+        loss="binary_crossentropy",
+        metrics=["accuracy"]
+    )
+    return model

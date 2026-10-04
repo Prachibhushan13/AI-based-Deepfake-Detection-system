@@ -34,17 +34,19 @@ class LiveDetectionSession:
                 "message": "Collecting frames for live analysis window.",
             }
 
-        inference = predict_video(list(self.frames))
+        prediction = predict_video(list(self.frames))
+        
         return {
             "type": "prediction",
             "ready": True,
             "frameCount": len(self.frames),
             "requiredFrames": self.min_frames,
-            "result": inference["result"],
-            "confidence": inference["confidence"],
-            "fakeProbability": inference["fakeProbability"],
-            "realProbability": inference["realProbability"],
-            "timeline": inference["timeline"],
-            "suspiciousFrameCount": len(inference["suspiciousIndices"]),
+            "result": prediction["result"],
+            "modelMode": prediction["modelMode"],
+            "confidence": prediction["confidence"],
+            "fakeProbability": prediction["fakeProbability"],
+            "realProbability": prediction["realProbability"],
+            "timeline": prediction["timeline"],
+            "suspiciousFrameCount": len(prediction.get("suspiciousIndices", [])),
             "message": "Live sliding-window analysis updated.",
         }

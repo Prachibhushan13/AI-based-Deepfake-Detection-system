@@ -1,0 +1,11 @@
+video_path,label,dataset,split
+datasets/deepfake/4.mp4,1,user_dataset,train
+datasets/video/2.mp4,0,user_dataset,train
+datasets/deepfake/5.mov,1,user_dataset,train
+datasets/video/3.mp4,0,user_dataset,train
+datasets/deepfake/2.mp4,1,user_dataset,train
+datasets/video/4.mp4,0,user_dataset,train
+datasets/video/5.mov,0,user_dataset,val
+datasets/deepfake/3.mp4,1,user_dataset,val
+datasets/deepfake/1.mp4,1,user_dataset,test
+datasets/video/1.mp4,0,user_dataset,test

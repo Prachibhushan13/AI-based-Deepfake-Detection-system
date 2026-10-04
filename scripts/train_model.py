@@ -7,5 +7,5 @@ from app.ml.train import train_model
 
 
 if __name__ == "__main__":
-    metrics = train_model("datasets/manifest.csv")
+    metrics = train_model("datasets/user_manifest.csv")
     print(metrics)

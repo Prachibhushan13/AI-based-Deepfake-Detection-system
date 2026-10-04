@@ -28,8 +28,8 @@ def align_face(image: np.ndarray, keypoints: dict) -> np.ndarray:
     return rotated
 
 
-def detect_and_crop_faces(frames: Iterable[np.ndarray]) -> tuple[list[np.ndarray], list[int], list[dict]]:
-    faces: list[np.ndarray] = []
+def detect_and_crop_faces(frames: Iterable[np.ndarray], target_size: int = settings.image_size, is_xception: bool = False, return_pil: bool = False) -> tuple[list[np.ndarray], list[int], list[dict]]:
+    faces = []
     suspicious_indices: list[int] = []
     all_keypoints: list[dict] = []
     for index, frame in enumerate(frames):
@@ -46,12 +46,30 @@ def detect_and_crop_faces(frames: Iterable[np.ndarray]) -> tuple[list[np.ndarray
             continue
             
         x, y, width, height = detections[0]["box"]
-        x, y = max(x, 0), max(y, 0)
-        crop = aligned_frame[y : y + height, x : x + width]
+        # Expand crop box slightly (margin)
+        margin = int(width * 0.1)
+        x = max(x - margin, 0)
+        y = max(y - margin, 0)
+        w = min(width + margin * 2, aligned_frame.shape[1] - x)
+        h = min(height + margin * 2, aligned_frame.shape[0] - y)
+        
+        crop = aligned_frame[y : y + h, x : x + w]
         if crop.size == 0:
             continue
-        resized = cv2.resize(crop, (settings.image_size, settings.image_size))
-        faces.append(resized.astype("float32") / 255.0)
+            
+        if return_pil:
+            from PIL import Image
+            crop_rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+            faces.append(Image.fromarray(crop_rgb))
+        else:
+            resized = cv2.resize(crop, (target_size, target_size))
+            if is_xception:
+                # Xception models strictly require [-1, 1] scaling. 
+                # [0, 1] scaling causes the model to guess randomly (~0.5).
+                faces.append((resized.astype("float32") / 127.5) - 1.0)
+            else:
+                faces.append(resized.astype("float32") / 255.0)
+            
         all_keypoints.append(detections[0].get("keypoints", {}))
         if detections[0].get("confidence", 0) < 0.95:
             suspicious_indices.append(index)
