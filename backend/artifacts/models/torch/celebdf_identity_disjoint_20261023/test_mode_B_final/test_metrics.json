@@ -1,0 +1,23 @@
+{
+  "test_loss": 0.3707764192263861,
+  "accuracy": 0.8792270531400966,
+  "balanced_accuracy": 0.5,
+  "precision_real": 0.0,
+  "recall_real": 0.0,
+  "f1_real": 0.0,
+  "precision_fake": 0.8792270531400966,
+  "recall_fake": 1.0,
+  "f1_fake": 0.9357326478149101,
+  "macro_f1": 0.46786632390745503,
+  "roc_auc": 0.5004395604395604,
+  "confusion_matrix": [
+    [
+      0,
+      100
+    ],
+    [
+      0,
+      728
+    ]
+  ]
+}

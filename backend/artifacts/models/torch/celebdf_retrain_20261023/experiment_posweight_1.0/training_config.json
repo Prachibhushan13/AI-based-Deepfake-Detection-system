@@ -1,0 +1,17 @@
+{
+  "index": "D:\\AI-based-Deepfake-Detection-system-main\\backend\\artifacts\\models\\torch\\celebdf_retrain_20261023\\features_index.csv",
+  "cache_dir": "D:\\AI-based-Deepfake-Detection-system-main\\backend\\artifacts\\models\\torch\\celebdf_retrain_20261023\\celebdf_features",
+  "output": "D:\\AI-based-Deepfake-Detection-system-main\\backend\\artifacts\\models\\torch\\celebdf_retrain_20261023\\experiment_posweight_1.0",
+  "epochs": 10,
+  "patience": 3,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0001,
+  "workers": 0,
+  "seed": 42,
+  "device": "cuda",
+  "resume": null,
+  "pos_weight": 1.0,
+  "train_rows": 5109,
+  "val_rows": 902
+}

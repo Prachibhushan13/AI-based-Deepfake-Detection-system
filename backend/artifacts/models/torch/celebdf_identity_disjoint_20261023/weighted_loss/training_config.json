@@ -1,0 +1,18 @@
+{
+  "index": "D:\\AI-based-Deepfake-Detection-system-main\\backend\\artifacts\\models\\torch\\celebdf_identity_disjoint_20261023\\features_index.csv",
+  "cache_dir": "D:\\AI-based-Deepfake-Detection-system-main\\backend\\artifacts\\models\\torch\\celebdf_retrain_20261023\\celebdf_features",
+  "output": "D:\\AI-based-Deepfake-Detection-system-main\\backend\\artifacts\\models\\torch\\celebdf_identity_disjoint_20261023\\weighted_loss",
+  "epochs": 20,
+  "patience": 5,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0001,
+  "workers": 0,
+  "seed": 42,
+  "device": "cuda",
+  "resume": null,
+  "experiment_mode": "weighted",
+  "train_rows": 4577,
+  "val_rows": 824,
+  "test_rows": 828
+}

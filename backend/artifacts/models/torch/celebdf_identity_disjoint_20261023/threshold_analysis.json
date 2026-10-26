@@ -1,0 +1,32 @@
+{
+  "best_model": "original_pw1.0",
+  "validation_set": {"total": 824, "real": 101, "fake": 723},
+  "probability_stats": {"min": 0.1124, "max": 0.9656, "mean": 0.9210},
+  "threshold_sweep": [
+    {"threshold": 0.05, "accuracy": 0.877, "balanced_accuracy": 0.500, "precision": 0.877, "recall": 1.000, "specificity": 0.000, "f1": 0.935, "fpr": 1.000, "fnr": 0.000},
+    {"threshold": 0.10, "accuracy": 0.877, "balanced_accuracy": 0.500, "precision": 0.877, "recall": 1.000, "specificity": 0.000, "f1": 0.935, "fpr": 1.000, "fnr": 0.000},
+    {"threshold": 0.15, "accuracy": 0.879, "balanced_accuracy": 0.505, "precision": 0.878, "recall": 1.000, "specificity": 0.010, "f1": 0.935, "fpr": 0.990, "fnr": 0.000},
+    {"threshold": 0.20, "accuracy": 0.879, "balanced_accuracy": 0.505, "precision": 0.878, "recall": 1.000, "specificity": 0.010, "f1": 0.935, "fpr": 0.990, "fnr": 0.000},
+    {"threshold": 0.25, "accuracy": 0.879, "balanced_accuracy": 0.505, "precision": 0.878, "recall": 1.000, "specificity": 0.010, "f1": 0.935, "fpr": 0.990, "fnr": 0.000},
+    {"threshold": 0.30, "accuracy": 0.879, "balanced_accuracy": 0.505, "precision": 0.878, "recall": 1.000, "specificity": 0.010, "f1": 0.935, "fpr": 0.990, "fnr": 0.000},
+    {"threshold": 0.35, "accuracy": 0.879, "balanced_accuracy": 0.505, "precision": 0.878, "recall": 1.000, "specificity": 0.010, "f1": 0.935, "fpr": 0.990, "fnr": 0.000},
+    {"threshold": 0.40, "accuracy": 0.880, "balanced_accuracy": 0.510, "precision": 0.880, "recall": 1.000, "specificity": 0.020, "f1": 0.936, "fpr": 0.980, "fnr": 0.000},
+    {"threshold": 0.45, "accuracy": 0.880, "balanced_accuracy": 0.510, "precision": 0.880, "recall": 1.000, "specificity": 0.020, "f1": 0.936, "fpr": 0.980, "fnr": 0.000},
+    {"threshold": 0.50, "accuracy": 0.880, "balanced_accuracy": 0.510, "precision": 0.880, "recall": 1.000, "specificity": 0.020, "f1": 0.936, "fpr": 0.980, "fnr": 0.000},
+    {"threshold": 0.55, "accuracy": 0.880, "balanced_accuracy": 0.510, "precision": 0.880, "recall": 1.000, "specificity": 0.020, "f1": 0.936, "fpr": 0.980, "fnr": 0.000},
+    {"threshold": 0.60, "accuracy": 0.880, "balanced_accuracy": 0.510, "precision": 0.880, "recall": 1.000, "specificity": 0.020, "f1": 0.936, "fpr": 0.980, "fnr": 0.000},
+    {"threshold": 0.65, "accuracy": 0.880, "balanced_accuracy": 0.510, "precision": 0.880, "recall": 1.000, "specificity": 0.020, "f1": 0.936, "fpr": 0.980, "fnr": 0.000},
+    {"threshold": 0.70, "accuracy": 0.880, "balanced_accuracy": 0.510, "precision": 0.880, "recall": 1.000, "specificity": 0.020, "f1": 0.936, "fpr": 0.980, "fnr": 0.000},
+    {"threshold": 0.75, "accuracy": 0.879, "balanced_accuracy": 0.509, "precision": 0.879, "recall": 0.999, "specificity": 0.020, "f1": 0.935, "fpr": 0.980, "fnr": 0.001},
+    {"threshold": 0.80, "accuracy": 0.877, "balanced_accuracy": 0.513, "precision": 0.880, "recall": 0.996, "specificity": 0.030, "f1": 0.934, "fpr": 0.970, "fnr": 0.004},
+    {"threshold": 0.85, "accuracy": 0.867, "balanced_accuracy": 0.528, "precision": 0.884, "recall": 0.976, "specificity": 0.079, "f1": 0.928, "fpr": 0.921, "fnr": 0.024},
+    {"threshold": 0.90, "accuracy": 0.765, "balanced_accuracy": 0.529, "precision": 0.885, "recall": 0.841, "specificity": 0.218, "f1": 0.862, "fpr": 0.782, "fnr": 0.159},
+    {"threshold": 0.95, "accuracy": 0.233, "balanced_accuracy": 0.508, "precision": 0.889, "recall": 0.144, "specificity": 0.871, "f1": 0.248, "fpr": 0.129, "fnr": 0.856}
+  ],
+  "operating_points": {
+    "best_balanced_accuracy": {"threshold": 0.9220, "balanced_accuracy": 0.5727, "specificity": 0.099, "recall": 0.950, "precision": 0.889, "f1": 0.918},
+    "max_specificity_recall_ge_0.90": {"threshold": 0.8839, "specificity": 0.1683, "recall": 0.901, "balanced_accuracy": 0.529, "precision": 0.885, "f1": 0.928},
+    "max_specificity_recall_ge_0.95": {"threshold": 0.8590, "specificity": 0.0990, "recall": 0.950, "balanced_accuracy": 0.573, "precision": 0.889, "f1": 0.918}
+  },
+  "notes": "Model heavily biased towards FAKE (mean probability = 0.9210). Even at threshold 0.95, FAKE recall drops to 0.144. At recall >= 0.90, maximum specificity is only 0.168 (FPR = 0.832)."
+}

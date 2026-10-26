@@ -1,0 +1,17 @@
+{
+  "index": "backend\\artifacts\\models\\torch\\identity_audit_v2\\features_index.csv",
+  "cache_dir": "backend\\artifacts\\models\\torch\\celebdf_retrain_20261023\\celebdf_features",
+  "output": "backend\\artifacts\\models\\torch\\celebdf_exp_temporal_v2_smoke_final",
+  "epochs": 1,
+  "patience": 1,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0001,
+  "workers": 0,
+  "seed": 42,
+  "device": "cuda",
+  "resume": null,
+  "train_rows": 4577,
+  "val_rows": 824,
+  "test_rows": 828
+}

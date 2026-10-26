@@ -1,0 +1,143 @@
+{
+  "experiment_name": "celebdf_identity_disjoint_20261023",
+  "timestamp": "2026-10-23",
+  "status": "READY_FOR_TRAINING",
+  "manifest": {
+    "path": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/celebdf_manifest.csv",
+    "total_videos": 6229,
+    "splits": {
+      "train": 4577,
+      "val": 824,
+      "test": 828
+    },
+    "label_distribution": {
+      "train": {"real": 389, "fake": 4188},
+      "val": {"real": 101, "fake": 723},
+      "test": {"real": 100, "fake": 728}
+    },
+    "folder_distribution": {
+      "train": {"Celeb-real": 389, "Celeb-synthesis": 4188},
+      "val": {"Celeb-real": 101, "Celeb-synthesis": 723},
+      "test": {"Celeb-real": 100, "Celeb-synthesis": 728}
+    },
+    "excluded": {
+      "YouTube-real": 300,
+      "reason": "No identity metadata available, cannot verify identity independence"
+    }
+  },
+  "feature_index": {
+    "path": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/features_index.csv",
+    "total_entries": 6229,
+    "status": "all_ok",
+    "missing_files": 0,
+    "split_distribution": {
+      "train": 4577,
+      "val": 824,
+      "test": 828
+    }
+  },
+  "identity_analysis": {
+    "total_identity_groups": 4,
+    "groups": [
+      {
+        "group_id": 0,
+        "identities": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 38, 59, 60, 61],
+        "num_identities": 38,
+        "num_videos": 4577,
+        "partition": "train"
+      },
+      {
+        "group_id": 1,
+        "identities": [36],
+        "num_identities": 1,
+        "num_videos": 10,
+        "partition": "val"
+      },
+      {
+        "group_id": 2,
+        "identities": [39, 40, 41, 42, 43, 44, 45, 46, 47, 48],
+        "num_identities": 10,
+        "num_videos": 814,
+        "partition": "val"
+      },
+      {
+        "group_id": 3,
+        "identities": [49, 50, 51, 52, 53, 54, 55, 56, 57, 58],
+        "num_identities": 10,
+        "num_videos": 828,
+        "partition": "test"
+      }
+    ],
+    "excluded_group": {
+      "group_id": -1,
+      "name": "YouTube-real",
+      "num_videos": 300,
+      "reason": "No identity metadata available"
+    },
+    "overlap_checks": {
+      "train_val_overlap": 0,
+      "train_test_overlap": 0,
+      "val_test_overlap": 0
+    }
+  },
+  "source_target_relationships": {
+    "cross_partition_pairs": 0,
+    "train_synthesis": 4188,
+    "val_synthesis": 723,
+    "test_synthesis": 728,
+    "note": "All source/target identity pairs remain within the same partition"
+  },
+  "official_test_list": {
+    "total_entries": 518,
+    "in_new_manifest": 448,
+    "in_our_test_partition": 43,
+    "in_train_partition": 368,
+    "in_val_partition": 37,
+    "label_mismatches": 0,
+    "note": "Official test list incompatible with identity-disjoint splits due to identity overlap. Not used for training or model selection."
+  },
+  "validation_results": {
+    "manifest_shape": [6229, 5],
+    "missing_columns": 0,
+    "duplicate_relative_paths": 0,
+    "missing_video_files": 0,
+    "missing_feature_files": 0,
+    "label_mismatches": 0,
+    "split_mismatches": 0,
+    "identity_overlap": {
+      "train_val": 0,
+      "train_test": 0,
+      "val_test": 0
+    },
+    "cross_partition_source_target_pairs": 0,
+    "missing_feature_files": 0,
+    "label_mismatches": 0,
+    "split_mismatches": 0
+  },
+  "training_compatibility": {
+    "feature_index_columns": ["relative_path", "feature_path", "label", "split", "status", "error"],
+    "required_columns_present": true,
+    "all_status_ok": true,
+    "split_values_match": true,
+    "all_feature_files_exist": true,
+    "train_val_test_splits_match": true
+  },
+  "output_paths": {
+    "experiment_dir": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023",
+    "manifest": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/celebdf_manifest.csv",
+    "feature_index": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/features_index.csv",
+    "excluded_videos": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/excluded_videos.csv",
+    "identity_group_assignment": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/identity_group_assignment.csv",
+    "identity_groups": "backend/artifacts/models/torch/celebdf_retrain_20261023/identity_groups.csv"
+  },
+  "training_command": "python scripts/train_torch_temporal.py --index backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/features_index.csv --cache-dir backend/artifacts/models/torch/celebdf_retrain_20261023/celebdf_features --output backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/checkpoints --epochs 20 --batch-size 32 --learning-rate 1e-3 --weight-decay 1e-4 --patience 5 --seed 42",
+  "notes": [
+    "Zero known identity overlap across train/val/test",
+    "No known source/target grouping conflicts across partitions",
+    "Deterministic split generation via connected components of identity graph",
+    "No external test data used for training or model selection",
+    "YouTube-real excluded due to lack of identity metadata",
+    "Official test list not used due to identity overlap with training data",
+    "Training script compatible with new feature index and split column"
+  ]
+}

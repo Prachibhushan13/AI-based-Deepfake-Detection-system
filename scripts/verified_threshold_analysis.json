@@ -1,0 +1,112 @@
+{
+  "validation_set_info": {
+    "n_total": 902,
+    "n_real": 107,
+    "n_fake": 795,
+    "real_proportion": 0.1186,
+    "fake_proportion": 0.8814
+  },
+  "label_encoding": {
+    "label_0": "REAL",
+    "label_1": "FAKE",
+    "verified_from": "features_index.csv split=val and training script output"
+  },
+  "score_orientation": {
+    "note": "Higher probability indicates FAKE class (label 1), but ROC-AUC near 0.5 indicates model cannot reliably separate classes",
+    "real_probs_mean": 0.7208,
+    "fake_probs_mean": 0.8167,
+    "real_logits_mean": 2.0945,
+    "fake_logits_mean": 2.6690,
+    "overlap": "REAL max=6.6179, FAKE min=-3.0296 - heavy overlap",
+    "percent_real_positive_logits": 72.0,
+    "percent_fake_negative_logits": 8.4
+  },
+  "roc_auc": {
+    "using_probabilities": 0.4963,
+    "using_logits": 0.4963,
+    "interpretation": "Near random (0.5) - model has little to no discriminative ability"
+  },
+  "confusion_matrix_at_0.50": {
+    "matrix": [[30, 77], [67, 728]],
+    "tn": 30,
+    "fp": 77,
+    "fn": 67,
+    "tp": 728,
+    "real_recall": 0.3093,
+    "fake_recall": 0.9043,
+    "real_precision": 0.2804,
+    "fake_precision": 0.9157,
+    "macro_f1": 0.6021,
+    "balanced_accuracy": 0.5980,
+    "accuracy": 0.8404
+  },
+  "confusion_matrix_at_0.40": {
+    "matrix": [[28, 79], [17, 778]],
+    "tn": 28,
+    "fp": 79,
+    "fn": 17,
+    "tp": 778,
+    "real_recall": 0.6222,
+    "fake_recall": 0.9078,
+    "real_precision": 0.2617,
+    "fake_precision": 0.9786,
+    "macro_f1": 0.6552,
+    "balanced_accuracy": 0.6201,
+    "accuracy": 0.8936
+  },
+  "threshold_analysis": {
+    "best_balanced_accuracy": {
+      "threshold": 0.40,
+      "balanced_accuracy": 0.6201,
+      "real_recall": 0.6222,
+      "fake_recall": 0.9078,
+      "real_precision": 0.2617,
+      "fake_precision": 0.9786,
+      "macro_f1": 0.6552
+    },
+    "best_macro_f1": {
+      "threshold": 0.40,
+      "macro_f1": 0.6552,
+      "real_recall": 0.6222,
+      "fake_recall": 0.9078,
+      "real_precision": 0.2617,
+      "fake_precision": 0.9786,
+      "balanced_accuracy": 0.6201
+    },
+    "thresholds_achieving_real_recall_ge_60_percent": [
+      {
+        "threshold": 0.35,
+        "real_recall": 0.6842,
+        "fake_recall": 0.9062,
+        "real_precision": 0.2430,
+        "fake_precision": 0.9849,
+        "macro_f1": 0.6513,
+        "balanced_accuracy": 0.6139
+      },
+      {
+        "threshold": 0.40,
+        "real_recall": 0.6222,
+        "fake_recall": 0.9078,
+        "real_precision": 0.2617,
+        "fake_precision": 0.9786,
+        "macro_f1": 0.6552,
+        "balanced_accuracy": 0.6201
+      }
+    ],
+    "earlier_report_discrepancy": {
+      "description": "The earlier validation report (from training script output) had REAL and FAKE precision/recall metrics SWAPPED in labels. The confusion matrix [[30, 77], [67, 728]] was correct, but the metric interpretation assigned rec_real=0.2804 when it should be 0.3093, and prec_real=0.3093 when it should be 0.2804. This was a labeling bug in the earlier report, not a data error.",
+      "earlier_reported": {
+        "rec_real": 0.2804,
+        "rec_fake": 0.9157,
+        "prec_real": 0.3093,
+        "prec_fake": 0.9043
+      },
+      "corrected": {
+        "rec_real": 0.3093,
+        "rec_fake": 0.9043,
+        "prec_real": 0.2804,
+        "prec_fake": 0.9157
+      }
+    }
+  }
+}

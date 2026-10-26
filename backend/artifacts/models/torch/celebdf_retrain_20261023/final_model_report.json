@@ -1,0 +1,150 @@
+{
+  "selected_model": {
+    "checkpoint": "experiment_posweight_0.5/best_checkpoint.pt",
+    "checkpoint_sha256": "8545AF7FF3C7B37957DDAF9C5FE3D7B17F1E1273924F550F862C202A308173A9",
+    "pos_weight": 0.5,
+    "threshold": 0.66,
+    "threshold_selection_criterion": "validation max specificity with fake recall >= 0.90",
+    "validation_threshold": 0.660688,
+    "validation_balanced_accuracy": 0.633186,
+    "validation_specificity": 0.364486,
+    "validation_recall": 0.901887,
+    "validation_precision": 0.913376,
+    "validation_f1": 0.907595,
+    "validation_roc_auc": 0.684336,
+    "validation_average_precision": 0.928555
+  },
+  "baseline_model": {
+    "checkpoint": "checkpoints/best_checkpoint.pt",
+    "checkpoint_sha256": "0C58FD041D01ECA5D0DA9257621642C0B8695D7566AC74D381C4706E26C25397",
+    "pos_weight": 0.134,
+    "threshold": 0.4,
+    "validation_balanced_accuracy": 0.62042,
+    "validation_specificity": 0.271028,
+    "validation_recall": 0.969811,
+    "validation_precision": 0.908127,
+    "validation_f1": 0.937956,
+    "validation_roc_auc": 0.609334,
+    "validation_average_precision": 0.91088
+  },
+  "test_set_evaluation": {
+    "test_videos": 518,
+    "real_count": 178,
+    "fake_count": 340,
+    "selected_model": {
+      "threshold": 0.66,
+      "accuracy": 0.7317,
+      "balanced_accuracy": 0.647,
+      "precision": 0.7376,
+      "recall": 0.9176,
+      "specificity": 0.3764,
+      "f1": 0.8178,
+      "roc_auc": 0.722,
+      "average_precision": 0.7966,
+      "confusion_matrix": {
+        "tn": 67,
+        "fp": 111,
+        "fn": 28,
+        "tp": 312
+      }
+    },
+    "baseline_model": {
+      "threshold": 0.4,
+      "accuracy": 0.7162,
+      "balanced_accuracy": 0.6085,
+      "precision": 0.7121,
+      "recall": 0.9529,
+      "specificity": 0.264,
+      "f1": 0.8151,
+      "roc_auc": 0.6696,
+      "average_precision": 0.7636,
+      "confusion_matrix": {
+        "tn": 47,
+        "fp": 131,
+        "fn": 16,
+        "tp": 324
+      }
+    }
+  },
+  "per_source_test_performance": {
+    "Celeb-real": {
+      "n": 108,
+      "selected_model": {
+        "accuracy": 0.1574,
+        "balanced_accuracy": 0.1574,
+        "specificity": 0.1574,
+        "false_positive_rate": 0.8426
+      },
+      "baseline_model": {
+        "accuracy": 0.0741,
+        "balanced_accuracy": 0.0741,
+        "specificity": 0.0741,
+        "false_positive_rate": 0.9259
+      }
+    },
+    "YouTube-real": {
+      "n": 70,
+      "selected_model": {
+        "accuracy": 0.7143,
+        "balanced_accuracy": 0.7143,
+        "specificity": 0.7143,
+        "false_positive_rate": 0.2857
+      },
+      "baseline_model": {
+        "accuracy": 0.5571,
+        "balanced_accuracy": 0.5571,
+        "specificity": 0.5571,
+        "false_positive_rate": 0.4429
+      }
+    },
+    "Celeb-synthesis": {
+      "n": 340,
+      "selected_model": {
+        "accuracy": 0.9176,
+        "balanced_accuracy": 0.9176,
+        "recall": 0.9176,
+        "false_negative_rate": 0.0824
+      },
+      "baseline_model": {
+        "accuracy": 0.9529,
+        "balanced_accuracy": 0.9529,
+        "recall": 0.9529,
+        "false_negative_rate": 0.0471
+      }
+    }
+  },
+  "identity_metadata": {
+    "Celeb_domain": {
+      "has_identity_metadata": true,
+      "total_identities": 59,
+      "train_test_overlap": 54,
+      "train_only": 5,
+      "test_only": 0,
+      "identity_disjoint_evaluation_possible": true,
+      "identity_disjoint_test_balanced_accuracy": 0.6027,
+      "identity_disjoint_test_specificity": 0.2446
+    },
+    "YouTube_real": {
+      "has_identity_metadata": false,
+      "identity_disjoint_evaluation_possible": false
+    }
+  },
+  "domain_bias_analysis": {
+    "finding": "Model learns domain features (Celeb vs YouTube) rather than manipulation artifacts",
+    "evidence": "Celeb-real videos have high fake probabilities (mean=0.724) similar to Celeb-synthesis (mean=0.763), while YouTube-real has lower fake probabilities (mean=0.462)",
+    "impact": "Celeb-real false positive rate 84.3% at threshold 0.66 vs YouTube-real 28.6%",
+    "limitation": "Results reflect dataset/source differences, not general deepfake manipulation detection"
+  },
+  "tradeoffs": {
+    "improvement": "Selected model improves balanced accuracy (+0.0385), specificity (+0.1124), ROC-AUC (+0.0524), AP (+0.0330) over baseline",
+    "cost": "Fake recall decreases from 0.953 to 0.918 (still meets >=0.90 requirement)",
+    "unresolved": "Celeb-real domain bias persists; model does not generalize to unseen identities in Celeb domain"
+  },
+  "recommendations": [
+    "Deploy pos_weight=0.5 model with threshold 0.66 for current use case",
+    "Clearly document domain bias limitation in model card",
+    "For production use, collect additional datasets with diverse domains (FaceForensics++, DFDC)",
+    "Consider cross-domain validation (train on Celeb, test on YouTube or vice versa)",
+    "Investigate frame-level manipulation labels for supervised artifact learning"
+  ]
+}

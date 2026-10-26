@@ -1,0 +1,24 @@
+{
+  "checkpoint_path": "D:\\AI-based-Deepfake-Detection-system-main\\backend\\artifacts\\models\\torch\\best_checkpoint.pt",
+  "checkpoint_sha256_before": "8545af7ff3c7b37957ddaf9c5fe3d7b17f1e1273924f550f862c202a308173a9",
+  "checkpoint_sha256_after": "8545af7ff3c7b37957ddaf9c5fe3d7b17f1e1273924f550f862c202a308173a9",
+  "manifest_path": "D:\\AI-based-Deepfake-Detection-system-main\\datasets\\sdfvd\\processed\\sdfvd_manifest.csv",
+  "output_dir": "D:\\AI-based-Deepfake-Detection-system-main\\backend\\artifacts\\models\\torch\\sdfvd_evaluation",
+  "device": "cuda",
+  "threshold": 0.53296262,
+  "sequence_length": 20,
+  "image_size": 224,
+  "total_videos": 106,
+  "successful": 106,
+  "failed": 0,
+  "failures": [],
+  "preprocessing": {
+    "frame_sampling": "evenly_spaced",
+    "sequence_length": 20,
+    "image_size": 224,
+    "color_conversion": "BGR2RGB",
+    "resize_interpolation": "INTER_LINEAR",
+    "normalization": "[0, 1] float32",
+    "padding": "repeat_last_frame"
+  }
+}

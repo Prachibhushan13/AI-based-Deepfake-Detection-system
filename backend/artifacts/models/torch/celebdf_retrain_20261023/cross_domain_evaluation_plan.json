@@ -1,0 +1,93 @@
+{
+  "experiment_name": "cross_domain_evaluation",
+  "description": "Evaluate model generalization across Celeb-real, YouTube-real, and available fake-video sources",
+  "metadata_availability": {
+    "Celeb_domain": {
+      "has_identity_metadata": true,
+      "total_identities": 59,
+      "train_test_overlap": 54,
+      "train_only": 5,
+      "test_only": 0,
+      "disjoint_possible": true,
+      "note": "54 of 59 identities appear in both train and test; identity-disjoint evaluation not fully achievable without external data"
+    },
+    "YouTube_real": {
+      "has_identity_metadata": false,
+      "identity_disjoint_possible": false,
+      "note": "No identity metadata available; videos have numeric filenames only. Cross-domain evaluation possible but identity cannot be controlled."
+    }
+  },
+  "proposed_experiment": {
+    "design": "Three-way cross-domain evaluation",
+    "datasets": {
+      "Celeb-real": {
+        "n_real": 108,
+        "domain": "Celeb",
+        "identity_based_split": "Possible (59 identities)",
+        "recommended_split": "Identity-disjoint: 41 train / 9 val / 9 test identities"
+      },
+      "YouTube-real": {
+        "n_real": 70,
+        "domain": "YouTube",
+        "identity_based_split": "Not possible",
+        "recommended_split": "Random 70/15/15 split (stratified by label)"
+      },
+      "Celeb-synthesis": {
+        "n_fake": 340,
+        "domain": "Celeb",
+        "identity_based_split": "Possible (52 identities in test)",
+        "recommended_split": "Use existing test identities (unseen during training if pos_weight=0.5 model used)"
+      }
+    },
+    "evaluation_protocol": {
+      "train": "Train on Celeb domain identities (41 identities with pos_weight=0.5)",
+      "validation": "Validate on Celeb val identities (9 identities) with threshold selection",
+      "test": "Evaluate on Celeb test identities (9 identities) AND YouTube-real (70 real)",
+      "metrics": [
+        "balanced_accuracy",
+        "specificity",
+        "fake_recall",
+        "precision",
+        "f1",
+        "roc_auc",
+        "average_precision"
+      ],
+      "threshold": "Fixed at 0.66 (selected on validation with recall>=0.90 constraint)"
+    },
+    "independent_test_set": "No independent test set currently available. Official Celeb-DF test list used once. Future: reserve FaceForensics++ or DFDC for final evaluation.",
+    "cross_domain_metrics": {
+      "celebral_to_youtube": "Evaluate Celeb-trained model on YouTube-real; expect moderate performance (baseline YouTube-real acc=0.557 at threshold 0.40)",
+      "youtube_to_celebral": "Evaluate YouTube-trained model on Celeb-real; expect poor performance (Celeb-real acc=0.075 at threshold 0.40)",
+      "both_domains": "Report per-domain metrics separately; do not claim single-number generalization"
+    }
+  },
+  "requirements_for_additional_datasets": {
+    "FaceForensics++": {
+      "compatible_labels": "Real / Fake (binary classification)",
+      "licensing_access": "Requires download from official repository; check license terms for commercial use",
+      "preprocessing_compatibility": "Uses same EfficientNet-B0 backbone; frame sampling at 20 fps, 224x224 RGB; normalization with ImageNet stats",
+      "fake_video_types": "DeepFake, NeuralTextures, Face2Face, FaceSwap",
+      "note": "Would provide truly independent evaluation with different source domains"
+    },
+    "DFDC": {
+      "compatible_labels": "Real / Fake (binary classification)",
+      "licensing_access": "Requires application and agreement; larger-scale dataset",
+      "preprocessing_compatibility": "Same backbone compatible; may differ in frame rates, resolutions, fake types",
+      "note": "Larger scale but access may be restricted"
+    }
+  },
+  "limitations": [
+    "No truly identity-disjoint evaluation possible with current Celeb-DF-v2 data",
+    "Celeb-real domain bias persists across identity splits",
+    "YouTube-real lacks identity metadata for controlled evaluation",
+    "Current results dataset-specific; not generalizable to arbitrary deepfake videos",
+    "Model optimized for Celeb-DF-v2; performance on other datasets unknown"
+  ],
+  "recommendations": [
+    "Report per-domain metrics; do not aggregate across Celeb and YouTube",
+    "For production deployment, calibrate threshold on target domain data",
+    "Collect additional datasets (FaceForensics++, DFDC) for independent evaluation",
+    "Investigate domain-invariant feature learning for future improvements",
+    "Document all metadata limitations transparently in model card"
+  ]
+}

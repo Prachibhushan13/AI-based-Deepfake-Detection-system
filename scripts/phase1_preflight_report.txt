@@ -1,0 +1,188 @@
+PHASE 1 — READ-ONLY PRE-FLIGHT REPORT
+================================================================================
+
+Project: Deepfake Detection System Audit
+Project Root: D:\AI-based-Deepfake-Detection-system-main
+
+TASK 1: Verify features_index_id_disjoint.csv
+
+1. File exists: YES
+   Path: D:\AI-based-Deepfake-Detection-system-main\backend\artifacts\models\torch\celebdf_retrain_20261023\features_index_id_disjoint.csv
+
+2. Structure:
+   Columns: relative_path, feature_path, label, split, status, error, identity, split_id
+   Total rows: 6,529
+
+3. Identity Analysis:
+   - Unique identities: 60 (not 359 as in the original features_index.csv)
+   - Train split: 5,109 videos, 60 identities
+   - Val split: 902 videos, 60 identities
+   - Test split: 518 videos, 55 identities
+
+4. CRITICAL FINDING — Identity Disjoint Check:
+   - Train-Val overlap: 60/60 identities (100%) — ALL val identities appear in train
+   - Train-Test overlap: 55/55 identities (100%) — ALL test identities appear in train
+   - Val-Test overlap: 55/55 identities (100%) — ALL test identities appear in val
+   - CONCLUSION: The file is NOT identity-disjoint. The split_id column has 42 train / 10 val / 10 test identities, but the actual 'split' column does NOT match split_id. The actual 'split' column has train/val/test identities that all overlap.
+
+5. Feature paths: All 6,529 feature .npy files exist and have shape (20, 1280).
+
+6. Label distribution:
+   - label=0 (REAL): 890 videos
+   - label=1 (FAKE): 5,639 videos
+
+7. Split distribution:
+   - train: 5,109 videos
+   - val: 902 videos
+   - test: 518 videos
+
+8. Split x Label crosstab:
+   - train: 605 REAL, 4,504 FAKE
+   - val: 107 REAL, 795 FAKE
+   - test: 178 REAL, 340 FAKE
+
+TASK 2: Training Script Analysis
+
+1. Script: scripts\train_torch_temporal.py
+2. Key arguments:
+   - --index: path to features index CSV (default: datasets/celebdf_features/features_index.csv)
+   - --cache-dir: path to feature cache (default: datasets/celebdf_features/)
+   - --output: output directory for checkpoints (default: backend/artifacts/models/torch/checkpoints)
+   - --epochs: 20 (default)
+   - --patience: 5 (default)
+   - --batch-size: 32 (default)
+   - --learning-rate: 1e-3 (default)
+   - --weight-decay: 1e-4 (default)
+   - --workers: 0 (CPU-only)
+   - --seed: 42 (default)
+   - --device: cpu or cuda
+   - --resume: path to checkpoint to resume from
+
+3. Training process:
+   - Reads index CSV, filters by status=="ok"
+   - Splits by split column: train_frame = usable[usable["split"] == "train"], val_frame = usable[usable["split"] == "val"]
+   - Creates CachedFeatureDataset from train_frame and val_frame
+   - Uses BCEWithLogitsLoss with pos_weight = negative/positive
+   - Uses AdamW optimizer, ReduceLROnPlateau scheduler
+   - Trains for args.epochs (default 20)
+   - Saves best_val_loss checkpoint and latest checkpoint
+   - Evaluates on val set each epoch, early stops after patience (default 5) epochs without improvement
+
+4. Model: CachedFeatureTemporalClassifier (EfficientNet-B0 + BiLSTM)
+   - Uses EfficientNet-B0 with classifier removed
+   - BiLSTM with projection, 2-layer LSTM, classifier head
+   - Outputs logits → sigmoid → fake_probability
+
+5. Training config (from best_checkpoint.pt):
+   - epochs: 20
+   - batch_size: 32
+   - learning_rate: 0.001
+   - weight_decay: 1e-4
+   - seed: 42
+   - device: cuda (but CPU-only environment)
+   - train_rows: 5,109
+   - val_rows: 902
+   - best_val_loss: 0.1505
+
+TASK 3: Identity Disjoint Feasibility
+
+1. features_index_id_disjoint.csv EXISTS but is NOT identity-disjoint:
+   - Has 60 unique identities (vs 359 in original)
+   - ALL 60 identities appear in BOTH train and val splits
+   - The split_id column (42 train / 10 val / 10 test) does NOT match the actual 'split' column usage
+   - The training script uses the 'split' column, not split_id
+
+2. Original features_index.csv (359 identities):
+   - Train-Val overlap: 59/88 val identities (67%)
+   - Train-Test overlap: 54/124 test identities (44%)
+   - Val-Test overlap: 54/88 val identities (61%)
+
+3. 41/9/9 split feasibility:
+   - The current data has 260 train identities, 88 val identities, 124 test identities (total 359)
+   - A 41/9/9 split would require 41+9+9 = 59 identities
+   - We have 359 identities available, so numerically feasible
+   - BUT: the current splits are NOT identity-disjoint, so any new split would need careful construction
+   - The 59 Celeb-real identities could potentially be split 41/9/9, but the 260 train identities in the current split include many more identities beyond just Celeb-real
+
+4. Official Celeb-DF test list:
+   - The test list is embedded in the manifest splits
+   - The current test split has 124 identities, 54 of which overlap with train
+   - The `cross_domain_evaluation_plan.json` references the official test list but notes "identity-disjoint evaluation not fully achievable without external data"
+
+5. Source-video leakage risk:
+   - The Celeb-synthesis videos are derived from Celeb-real source identities
+   - The `features_index.csv` has `folder` column (Celeb-real, Celeb-synthesis, YouTube-real)
+   - Source-video relationships create additional leakage beyond identity overlap
+
+TASK 3: Feasibility Assessment
+
+1. Can we create a 41/9/9 identity-disjoint split?
+   - NUMERICALLY YES: 359 total identities available, 41+9+9 = 59 can be selected
+   - BUT: The existing data has 359 identities with 67% Train-Val overlap. Any new split must be carefully constructed to avoid this overlap.
+   - The existing `features_index_id_disjoint.csv` was INTENDED to be identity-disjoint but FAILS this test — all 60 identities appear in train.
+
+2. Can we use the existing cached features?
+   - YES: 6,529 feature .npy files exist with shape (20, 1280), compatible with CachedFeatureDataset
+   - The feature extraction uses EfficientNet-B0 backbone with ImageNet normalization, same as training
+
+3. Can we respect the official Celeb-DF test list?
+   - The official test list is embedded in the manifest splits
+   - The current test split has 54/124 identities overlapping with train
+   - A truly identity-disjoint test would require selecting a different set of test identities
+
+4. Blockers:
+   - The existing features_index_id_disjoint.csv is NOT identity-disjoint (all identities appear in train)
+   - The training script uses the 'split' column, not split_id
+   - No existing code path for identity-disjoint splitting without modifying scripts
+   - The 59/88/124 split overlaps are embedded in the current manifests and caches
+
+TASK 4: Proposed Experiment Plan (if approved)
+
+1. Create new identity-disjoint manifest:
+   - Select 41 train identities, 9 val identities, 9 test identities from the 359 available
+   - Ensure NO identity appears in more than one split
+   - Preserve class balance (REAL/FAKE) within each split
+
+2. Regenerate feature cache for the new splits (or use existing features with filtering)
+
+3. Train a fresh model with:
+   - Same architecture (EfficientNet-B0 + BiLSTM)
+   - Same hyperparameters (lr=1e-3, wd=1e-4, batch_size=32, epochs=20)
+   - Same BCEWithLogitsLoss with pos_weight
+   - No resume from existing checkpoint (train from scratch)
+   - Seed=42 for reproducibility
+
+4. Evaluate on SDFVD/UADFV with threshold 0.66 (unchanged)
+   - Compare against baseline: 50% SDFVD accuracy, 51% UADFV accuracy
+   - Note: Cannot claim causality without controlled experiment
+
+5. Record all metrics and compare against baseline
+
+BLOCKERS & Limitations:
+
+1. NO identity-disjoint split exists in current data — the features_index_id_disjoint.csv FAILS this test
+2. The training script uses the 'split' column, requiring manifest regeneration
+3. Feature cache would need filtering or regeneration for new splits
+4. 359 identities with 67% Train-Val overlap makes true identity-disjoint splitting non-trivial
+5. Cannot claim improved accuracy without the experiment, and cannot claim identity leakage caused failures without the experiment
+
+FILES TO PRESERVE (do not modify):
+- backend/artifacts/models/torch/best_checkpoint.pt
+- datasets/SDFVD/processed/ (all files)
+- datasets/UADFV/processed/ (all files)
+- datasets/celebdf_manifest.csv
+- backend/artifacts/models/torch/celebdf_retrain_20261023/ (all files)
+- scripts/train_torch_temporal.py
+- scripts/prepare_celebdf.py
+
+COMMANDS NEEDED (if approved):
+
+1. Create new identity-disjoint manifest (requires script modification)
+2. Regenerate feature cache for new splits (or filter existing cache)
+3. Train fresh model from scratch (20 epochs, CPU, ~30-60 minutes)
+4. Evaluate on SDFVD/UADFV with threshold 0.66
+5. Compare metrics against baseline
+
+STOP — Wait for explicit approval before proceeding. No training or code modifications will occur without approval.
+
+================================================================================

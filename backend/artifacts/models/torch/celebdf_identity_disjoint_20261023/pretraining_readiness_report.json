@@ -1,0 +1,65 @@
+{
+  "experiment": "celebdf_identity_disjoint_20261023",
+  "audit_date": "2026-10-23",
+  "overall_status": "READY_FOR_TRAINING",
+  "checks": {
+    "cache_filenames": {
+      "status": "PASS",
+      "details": "All 6229 cache filenames match expected SHA256(relative_path)[:24].npy pattern. 0 mismatches, 0 missing files."
+    },
+    "feature_quality": {
+      "status": "PASS",
+      "details": "All 6229 features: shape=(20,1280), dtype=float32, all finite. Sequence length=20, feature_dim=1280. YouTube-real excluded (0 samples)."
+    },
+    "provenance": {
+      "status": "PARTIAL",
+      "details": "Cache generation and inference preprocessing match exactly (EfficientNet-B0, 20 frames, 224x224, ImageNet norm, BGR->RGB, np.linspace sampling). Training script uses correct cache_dir and index. .npy files contain only features (20,1280) - no embedded provenance metadata. Provenance traceable via index/manifest chain only."
+    },
+    "training_loader": {
+      "status": "PASS",
+      "details": "Training script uses --index, --cache-dir, --output args correctly. Reads split column from index for train/val/test. Checkpoint selection uses validation loss only. Test split NOT used for checkpoint selection. Output directory is new experiment directory."
+    },
+    "label_balance": {
+      "status": "PASS_WITH_WARNING",
+      "details": "Train: 4577 (389 real, 4188 fake, ratio 0.093). Val: 824 (101 real, 723 fake, ratio 0.140). Test: 828 (100 real, 728 fake, ratio 0.137). All partitions have both classes. Identity counts: Train 38, Val 11, Test 10. Severe class imbalance (fake-dominated) but both classes present."
+    },
+    "output_directory": {
+      "status": "PASS",
+      "details": "New experiment directory: backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/. No checkpoints subdirectory exists. Production checkpoint at backend/artifacts/models/torch/best_checkpoint.pt will not be overwritten."
+    },
+    "determinism": {
+      "status": "WARNING",
+      "details": "Seed=42 set via set_seed() (random, numpy, torch, torch.cuda). CUDA determinism NOT fully configured: cudnn.deterministic=False, cudnn.benchmark=False, CUBLAS_WORKSPACE_CONFIG not set, use_deterministic_algorithms not set. Workers=0 (deterministic data loading). GPU execution may produce slightly different results across runs. For strict reproducibility, add deterministic settings or use CPU-only training."
+    }
+  },
+  "mandatory_checks": {
+    "zero_identity_overlap": true,
+    "no_source_target_conflicts": true,
+    "deterministic_split_generation": true,
+    "no_external_test_data_used": true,
+    "training_loader_correct": true,
+    "output_dir_isolated": true,
+    "feature_files_exist": true,
+    "feature_shapes_correct": true,
+    "labels_splits_match": true
+  },
+  "warnings": [
+    "CUDA determinism not fully configured - results may vary slightly across GPU runs",
+    "Severe class imbalance (fake-dominated) in all partitions",
+    "Imbalanced partition sizes: Train 4577 >> Val 824 ≈ Test 828",
+    "Group 0 dominates (38/59 identities in training)",
+    "YouTube-real excluded (no identity metadata)",
+    "Official test list incompatible with identity-disjoint splits",
+    "Feature-to-video provenance not embedded in .npy files (traceable via index/manifest only)"
+  ],
+  "output_paths": {
+    "experiment_dir": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/",
+    "manifest": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/celebdf_manifest.csv",
+    "feature_index": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/features_index.csv",
+    "excluded_videos": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/excluded_videos.csv",
+    "identity_group_assignment": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/identity_group_assignment.csv",
+    "validation_report_json": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/validation_report.json",
+    "validation_report_md": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/validation_report.md"
+  },
+  "training_command": "python scripts/train_torch_temporal.py --index backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/features_index.csv --cache-dir backend/artifacts/models/torch/celebdf_retrain_20261023/celebdf_features --output backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/checkpoints --epochs 20 --batch-size 32 --learning-rate 1e-3 --weight-decay 1e-4 --patience 5 --seed 42"
+}

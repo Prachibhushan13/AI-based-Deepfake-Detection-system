@@ -1,0 +1,6 @@
+identity_group,partition,identities,num_identities,num_videos,notes
+0,train,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 38, 59, 60, 61]",38,4577,"Largest connected component, assigned to train"
+1,val,[36],1,10,"Identity 36 only in Celeb-real, assigned to val"
+2,val,"[39, 40, 41, 42, 43, 44, 45, 46, 47, 48]",10,814,Assigned to val
+3,test,"[49, 50, 51, 52, 53, 54, 55, 56, 57, 58]",10,828,Assigned to test
+-1,excluded,unknown (YouTube-real),0,300,"No identity metadata, excluded from identity-disjoint experiment"

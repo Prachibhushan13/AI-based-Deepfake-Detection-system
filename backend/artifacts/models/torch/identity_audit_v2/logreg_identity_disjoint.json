@@ -1,0 +1,59 @@
+{
+  "method": "LogisticRegression_mean_pooling_identity_disjoint",
+  "class_weights": {
+    "0": 5.883033419023136,
+    "1": 0.5464422158548233
+  },
+  "val_metrics": {
+    "confusion_matrix": [
+      [
+        49,
+        52
+      ],
+      [
+        266,
+        457
+      ]
+    ],
+    "real_recall": 0.48514851485148514,
+    "fake_recall": 0.632088520055325,
+    "real_precision": 0.15555555555555556,
+    "fake_precision": 0.8978388998035364,
+    "macro_f1": 0.48873001998001997,
+    "balanced_accuracy": 0.5586185174534051,
+    "accuracy": 0.6140776699029126,
+    "roc_auc": 0.5854593758130999
+  },
+  "test_metrics": {
+    "confusion_matrix": [
+      [
+        38,
+        62
+      ],
+      [
+        220,
+        508
+      ]
+    ],
+    "real_recall": 0.38,
+    "fake_recall": 0.6978021978021978,
+    "real_precision": 0.14728682170542637,
+    "fake_precision": 0.8912280701754386,
+    "macro_f1": 0.49751659192053094,
+    "balanced_accuracy": 0.5389010989010989,
+    "accuracy": 0.6594202898550725,
+    "roc_auc": 0.5583379120879121
+  },
+  "train_counts": {
+    "REAL": 389,
+    "FAKE": 4188
+  },
+  "val_counts": {
+    "REAL": 101,
+    "FAKE": 723
+  },
+  "test_counts": {
+    "REAL": 100,
+    "FAKE": 728
+  }
+}

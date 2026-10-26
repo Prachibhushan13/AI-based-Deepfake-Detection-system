@@ -1,0 +1,48 @@
+{
+  "method": "LogisticRegression_mean_pooling",
+  "class_weights": {
+    "0": 4.222314049586777,
+    "1": 0.5671625222024866
+  },
+  "val_metrics": {
+    "confusion_matrix": [
+      [
+        46,
+        61
+      ],
+      [
+        36,
+        759
+      ]
+    ],
+    "real_recall": 0.42990654205607476,
+    "fake_recall": 0.9547169811320755,
+    "real_precision": 0.5609756097560976,
+    "fake_precision": 0.925609756097561,
+    "macro_f1": 0.7133552836339214,
+    "balanced_accuracy": 0.6923117615940751,
+    "accuracy": 0.8924611973392461,
+    "roc_auc": 0.6621877387879856
+  },
+  "test_metrics": {
+    "confusion_matrix": [
+      [
+        91,
+        87
+      ],
+      [
+        37,
+        303
+      ]
+    ],
+    "real_recall": 0.5112359550561798,
+    "fake_recall": 0.8911764705882353,
+    "real_precision": 0.7109375,
+    "fake_precision": 0.7769230769230769,
+    "macro_f1": 0.7124541140657177,
+    "balanced_accuracy": 0.7012062128222076,
+    "accuracy": 0.7606177606177607,
+    "roc_auc": 0.6877726371447456
+  },
+  "val_threshold_sweep": []
+}

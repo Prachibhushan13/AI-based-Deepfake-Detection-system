@@ -1,0 +1,2 @@
+epoch,learning_rate,train_loss,val_loss,accuracy,balanced_accuracy,precision_real,recall_real,f1_real,precision_fake,recall_fake,f1_fake,macro_f1,roc_auc,confusion_matrix,seconds
+1,0.001,0.1773479996822483,0.20421821038121157,0.12257281553398058,0.5,0.12257281553398058,1.0,0.21837837837837837,0.0,0.0,0.0,0.10918918918918918,0.4718650288265341,"[[101, 0], [723, 0]]",3.7793969999765977

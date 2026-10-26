@@ -1,0 +1,65 @@
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.venv/
+.venv-*/
+venv/
+.venv-*/
+node_modules/
+dist/
+build/
+.env
+frontend/.env
+backend/.env
+backend/uploads/*
+!backend/uploads/.gitkeep
+*.log
+coverage/
+htmlcov/
+tmp/
+.mongo_data/
+
+# Generated datasets, experiment outputs, and local editor state
+datasets/Celeb-DF-v2/
+datasets/celebdf_features/
+datasets/dfdc/
+datasets/sdfvd/
+datasets/UADFV/
+datasets/celebdf_manifest.csv
+evaluation_results/
+experiments/results/
+evaluation_predictions.csv
+frontend/tsconfig.tsbuildinfo
+
+# Virtual environments and caches
+.venv-torch-retrain/
+.venv-*/
+*.venv/
+
+# Local backup copies created during experimentation
+*.backup_*
+*.bak
+*.save
+
+# Large model checkpoints (handled by Git LFS if needed)
+*.pt
+*.pth
+*.h5
+*.hdf5
+*.onnx
+*.keras
+
+# Negate specific checkpoint files we want to track
+!backend/artifacts/models/torch/best_checkpoint.pt
+!backend/artifacts/models/torch/latest_checkpoint.pt
+!backend/artifacts/models/torch/*/best_checkpoint.pt
+!backend/artifacts/models/torch/*/latest_checkpoint.pt
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

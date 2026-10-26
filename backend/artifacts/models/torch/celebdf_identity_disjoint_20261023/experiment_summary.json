@@ -1,0 +1,155 @@
+{
+  "experiment_dir": "backend/artifacts/models/torch/celebdf_identity_disjoint_20261023/",
+  "dataset": {
+    "name": "Celeb-DF identity-disjoint",
+    "total_videos": 6229,
+    "train": {"total": 4577, "real": 389, "fake": 4188, "identities": 38},
+    "val": {"total": 824, "real": 101, "fake": 723, "identities": 11},
+    "test": {"total": 828, "real": 100, "fake": 728, "identities": 10},
+    "excluded": {"YouTube-real": 300, "reason": "no identity metadata"}
+  },
+  "experiments": {
+    "baseline_unweighted": {
+      "mode": "unweighted",
+      "output_dir": "baseline_unweighted/",
+      "config": {
+        "epochs": 20,
+        "patience": 5,
+        "batch_size": 32,
+        "learning_rate": 1e-3,
+        "weight_decay": 1e-4,
+        "seed": 42,
+        "experiment_mode": "unweighted",
+        "pos_weight": 0.0929
+      },
+      "early_stopping_epoch": 6,
+      "validation": {
+        "loss": 0.1614,
+        "accuracy": 0.880,
+        "balanced_accuracy": 0.510,
+        "precision": 0.880,
+        "recall": 1.000,
+        "f1": 0.1546,
+        "roc_auc": 0.4518,
+        "confusion_matrix": [[89, 11], [655, 73]]
+      },
+      "test": {
+        "loss": 0.1546,
+        "accuracy": 0.1957,
+        "balanced_accuracy": 0.4951,
+        "precision": 0.0000,
+        "recall": 0.0000,
+        "f1": 0.1798,
+        "roc_auc": 0.5027,
+        "confusion_matrix": [[89, 11], [655, 73]]
+      },
+      "behavior": "Predicts almost everything as FAKE"
+    },
+    "weighted_loss": {
+      "mode": "weighted",
+      "output_dir": "weighted_loss/",
+      "config": {
+        "epochs": 20,
+        "patience": 5,
+        "batch_size": 32,
+        "learning_rate": 1e-3,
+        "weight_decay": 1e-4,
+        "seed": 42,
+        "experiment_mode": "weighted",
+        "weight_real": 5.8830,
+        "weight_fake": 0.5464
+      },
+      "early_stopping_epoch": 6,
+      "validation": {
+        "loss": 0.4784,
+        "accuracy": 0.880,
+        "balanced_accuracy": 0.510,
+        "precision": 0.880,
+        "recall": 1.000,
+        "f1": 0.9347,
+        "roc_auc": 0.4565,
+        "confusion_matrix": [[0, 100], [0, 728]]
+      },
+      "test": {
+        "loss": 0.4641,
+        "accuracy": 0.8792,
+        "balanced_accuracy": 0.5000,
+        "precision": 0.8792,
+        "recall": 1.000,
+        "f1": 0.9357,
+        "roc_auc": 0.5173,
+        "confusion_matrix": [[0, 100], [0, 728]]
+      },
+      "behavior": "Predicts everything as FAKE"
+    },
+    "balanced_sampler": {
+      "mode": "balanced_sampler",
+      "output_dir": "balanced_sampler/",
+      "config": {
+        "epochs": 20,
+        "patience": 5,
+        "batch_size": 32,
+        "learning_rate": 1e-3,
+        "weight_decay": 1e-4,
+        "seed": 42,
+        "experiment_mode": "balanced_sampler"
+      },
+      "early_stopping_epoch": 6,
+      "validation": {
+        "loss": 0.3107,
+        "accuracy": 0.880,
+        "balanced_accuracy": 0.510,
+        "precision": 0.880,
+        "recall": 1.000,
+        "f1": 0.9347,
+        "roc_auc": 0.5057,
+        "confusion_matrix": [[100, 0], [728, 0]]
+      },
+      "test": {
+        "loss": 0.2995,
+        "accuracy": 0.1208,
+        "balanced_accuracy": 0.5000,
+        "precision": 0.0000,
+        "recall": 0.0000,
+        "f1": 0.0000,
+        "roc_auc": 0.5393,
+        "confusion_matrix": [[100, 0], [728, 0]]
+      },
+      "behavior": "Predicts everything as REAL"
+    }
+  },
+  "original_experiments_on_leaky_split": {
+    "original_pw0.25": {
+      "test": {"accuracy": 0.8744, "balanced_accuracy": 0.5188, "precision": 0.8833, "recall": 0.9876, "f1": 0.9326, "roc_auc": 0.5694, "confusion_matrix": [[5, 95], [9, 719]]}
+    },
+    "original_pw0.5": {
+      "test": {"accuracy": 0.8684, "balanced_accuracy": 0.5154, "precision": 0.8826, "recall": 0.9808, "f1": 0.9291, "roc_auc": 0.5327, "confusion_matrix": [[5, 95], [14, 714]]}
+    },
+    "original_pw1.0": {
+      "test": {"accuracy": 0.8816, "balanced_accuracy": 0.5143, "precision": 0.8823, "recall": 0.9986, "f1": 0.9369, "roc_auc": 0.5725, "confusion_matrix": [[3, 97], [1, 727]]}
+    },
+    "original_baseline": {
+      "test": {"accuracy": 0.7850, "balanced_accuracy": 0.5543, "precision": 0.8929, "recall": 0.8585, "f1": 0.8754, "roc_auc": 0.5769, "confusion_matrix": [[25, 75], [103, 625]]}
+    }
+  },
+  "threshold_analysis": {
+    "best_model": "original_pw1.0",
+    "validation_set": {"total": 824, "real": 101, "fake": 723},
+    "probability_stats": {"min": 0.1124, "max": 0.9656, "mean": 0.9210},
+    "threshold_sweep": [
+      {"threshold": 0.50, "balanced_accuracy": 0.510, "specificity": 0.020, "recall": 1.000, "precision": 0.880, "f1": 0.936},
+      {"threshold": 0.70, "balanced_accuracy": 0.510, "specificity": 0.020, "recall": 1.000, "precision": 0.880, "f1": 0.936},
+      {"threshold": 0.80, "balanced_accuracy": 0.513, "specificity": 0.030, "recall": 0.996, "precision": 0.880, "f1": 0.934},
+      {"threshold": 0.85, "balanced_accuracy": 0.528, "specificity": 0.079, "recall": 0.976, "precision": 0.884, "f1": 0.928},
+      {"threshold": 0.8839, "balanced_accuracy": 0.529, "specificity": 0.168, "recall": 0.901, "precision": 0.885, "f1": 0.928},
+      {"threshold": 0.8839, "balanced_accuracy": 0.529, "specificity": 0.168, "recall": 0.901, "precision": 0.885, "f1": 0.928},
+      {"threshold": 0.9220, "balanced_accuracy": 0.573, "specificity": 0.099, "recall": 0.950, "precision": 0.889, "f1": 0.918},
+      {"threshold": 0.95, "balanced_accuracy": 0.508, "specificity": 0.871, "recall": 0.144, "precision": 0.889, "f1": 0.248}
+    ],
+    "best_balanced_accuracy": {"threshold": 0.9220, "balanced_accuracy": 0.5727},
+    "max_specificity_recall_ge_0.90": {"threshold": 0.8839, "specificity": 0.1683, "recall": 0.901},
+    "max_specificity_recall_ge_0.95": {"threshold": 0.8590, "specificity": 0.0990, "recall": 0.950}
+  },
+  "recommendation": "NOT READY FOR PRODUCTION. All three identity-disjoint experiments failed. Best available model is original_pw1.0 (trained on leaky split) but has severe limitations (83% FPR at 90% recall). Recommend architectural changes before identity-disjoint training.",
+  "verdict": "NOT READY FOR PRODUCTION"
+}

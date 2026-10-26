@@ -1,0 +1,70 @@
+{
+  "total_videos": 6529,
+  "required_columns": [
+    "video_path",
+    "relative_path",
+    "folder",
+    "label",
+    "split",
+    "identities"
+  ],
+  "checks": {
+    "required_columns": {
+      "passed": true,
+      "missing": []
+    },
+    "valid_labels": {
+      "passed": true,
+      "invalid": []
+    },
+    "valid_splits": {
+      "passed": true,
+      "invalid": []
+    },
+    "duplicate_videos": {
+      "passed": true,
+      "count": 0
+    },
+    "identity_overlap": {
+      "passed": false,
+      "train_val_overlap": 39,
+      "train_test_overlap": 25,
+      "val_test_overlap": 32,
+      "train_identities": 251,
+      "val_identities": 92,
+      "test_identities": 88
+    },
+    "class_distribution": {
+      "0": {
+        "test": 91,
+        "train": 641,
+        "val": 158
+      },
+      "1": {
+        "test": 744,
+        "train": 2802,
+        "val": 2093
+      }
+    }
+  },
+  "split_stats": {
+    "train": {
+      "videos": 3443,
+      "identities": 251,
+      "real": 641,
+      "fake": 2802
+    },
+    "val": {
+      "videos": 2251,
+      "identities": 92,
+      "real": 158,
+      "fake": 2093
+    },
+    "test": {
+      "videos": 835,
+      "identities": 88,
+      "real": 91,
+      "fake": 744
+    }
+  }
+}
