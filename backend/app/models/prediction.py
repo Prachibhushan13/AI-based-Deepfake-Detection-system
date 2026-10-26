@@ -12,8 +12,10 @@ class PredictionInDB(BaseModel):
     realProbability: float
     fakeProbability: float
     suspiciousFrames: list[str] = Field(default_factory=list)
+    suspiciousFrameDetails: list[dict] = Field(default_factory=list)
     frameTimeline: list[dict] = Field(default_factory=list)
     heatmapFrames: list[str] = Field(default_factory=list)
+    videoMetadata: dict | None = None
     modelsComparison: dict | None = None
     facesAnalysis: list[dict] | None = None
     audioAnalysis: dict | None = None

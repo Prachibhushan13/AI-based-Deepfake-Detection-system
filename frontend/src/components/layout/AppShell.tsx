@@ -1,62 +1,149 @@
-import { Link, NavLink } from "react-router-dom";
-import { Activity, FileClock, LayoutDashboard, LogOut, ShieldAlert, UploadCloud, SplitSquareHorizontal } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
-
-const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/upload", label: "Analyze", icon: UploadCloud },
-  { to: "/compare", label: "Model Compare", icon: SplitSquareHorizontal },
-  { to: "/analytics", label: "Analytics", icon: Activity },
-  { to: "/history", label: "History", icon: FileClock },
-  { to: "/admin", label: "Admin", icon: ShieldAlert },
-];
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { checkBackendHealth } from "../../services/api";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { logout, user } = useAuth();
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let active = true;
+    const verify = async () => {
+      const ok = await checkBackendHealth();
+      if (active) {
+        setBackendOnline(ok);
+      }
+    };
+    verify();
+    const interval = window.setInterval(verify, 15000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const scrollToSection = (sectionId: string) => {
+    const isWorkspacePage = location.pathname === "/" || location.pathname === "/upload";
+    if (!isWorkspacePage) {
+      navigate(`/#${sectionId}`);
+      setTimeout(() => {
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+      return;
+    }
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    } else if (sectionId === "analyze") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 lg:px-8">
-        <aside className="glass-panel hidden w-72 rounded-[28px] p-6 lg:block">
-          <Link to="/" className="font-display text-2xl font-bold">
-            DeepSight AI
-          </Link>
-          <p className="mt-3 text-sm text-slate-300">
-            Hybrid CNN-LSTM for forensic video integrity analysis.
-          </p>
-          <nav className="mt-8 space-y-2">
-            {navItems.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition ${
-                    isActive ? "bg-cyber/15 text-cyber" : "text-slate-300 hover:bg-white/5"
-                  }`
-                }
-              >
-                <Icon size={18} />
-                {label}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="mt-10 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-cyber/70">Signed in</p>
-            <p className="mt-2 font-medium">{user?.name}</p>
-            <p className="text-sm text-slate-400">{user?.email}</p>
-            <button
-              type="button"
-              onClick={logout}
-              className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-cyber hover:text-cyber"
+    <div className="min-h-screen flex flex-col bg-[#F7F6F2] text-zinc-900">
+      <header className="sticky top-0 z-30 border-b border-stone-200/90 bg-[#F7F6F2]/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-6">
+            <Link
+              to="/"
+              className="group flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-900 rounded"
             >
-              <LogOut size={16} />
-              Logout
-            </button>
+              <span className="flex h-7 w-7 items-center justify-center rounded border border-zinc-800 bg-zinc-900 text-xs font-mono font-semibold tracking-tight text-white">
+                DT
+              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-base font-semibold tracking-tight text-zinc-900">
+                  DeepTrace
+                </span>
+                <span className="hidden text-xs font-mono uppercase tracking-wider text-zinc-500 sm:inline">
+                  Forensic Media Lab
+                </span>
+              </div>
+            </Link>
+
+            <nav aria-label="Primary" className="flex items-center gap-1 sm:gap-2">
+              <button
+                type="button"
+                onClick={() => scrollToSection("analyze")}
+                className={`rounded px-2.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-900 ${
+                  location.pathname === "/" || location.pathname === "/upload"
+                    ? "text-zinc-900 hover:bg-stone-200/60"
+                    : "text-zinc-600 hover:bg-stone-200/60 hover:text-zinc-900"
+                }`}
+              >
+                Analyze
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("how-it-works")}
+                className="rounded px-2.5 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-stone-200/60 hover:text-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-900"
+              >
+                How It Works
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("about")}
+                className="rounded px-2.5 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-stone-200/60 hover:text-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-900"
+              >
+                About
+              </button>
+              <Link
+                to="/history"
+                className={`rounded px-2.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-900 ${
+                  location.pathname === "/history"
+                    ? "bg-stone-200/80 text-zinc-900"
+                    : "text-zinc-600 hover:bg-stone-200/60 hover:text-zinc-900"
+                }`}
+              >
+                History
+              </Link>
+            </nav>
           </div>
-        </aside>
-        <main className="flex-1">{children}</main>
-      </div>
+
+          {backendOnline !== null && (
+            <div
+              className="flex items-center gap-2 rounded border border-stone-200 bg-white px-2.5 py-1 text-xs font-mono text-zinc-600"
+              title={
+                backendOnline
+                  ? "Verified via GET /health endpoint"
+                  : "Backend API /health endpoint did not respond"
+              }
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  backendOnline ? "bg-emerald-600" : "bg-amber-600"
+                }`}
+              />
+              <span className="hidden sm:inline">
+                {backendOnline ? "Inference engine ready" : "Backend offline"}
+              </span>
+              <span className="sm:hidden">{backendOnline ? "Online" : "Offline"}</span>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        {children}
+      </main>
+
+      <footer className="mt-16 border-t border-stone-200/90 bg-[#EFECE6]/60">
+        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="max-w-md">
+              <p className="text-sm font-semibold text-zinc-900">DeepTrace</p>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                Digital media authenticity and deepfake analysis tool powered by a hybrid CNN-LSTM spatial-temporal inference pipeline.
+              </p>
+            </div>
+            <p className="max-w-lg text-xs leading-relaxed text-zinc-500">
+              <strong className="font-medium text-zinc-700">Responsible use notice:</strong>{" "}
+              Automated detection results provide a probabilistic technical indicator, not definitive proof of manipulation or authenticity. Always evaluate findings alongside source provenance and domain review.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
-

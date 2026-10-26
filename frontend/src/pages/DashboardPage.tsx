@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { StatCard } from "../components/ui/StatCard";
 import { ConfidenceChart } from "../components/charts/ConfidenceChart";
 import { AppShell } from "../components/layout/AppShell";
@@ -11,106 +12,106 @@ export function DashboardPage() {
 
   useEffect(() => {
     let active = true;
-
-    const loadHistory = async () => {
-      try {
-        const response = await api.get("/history");
+    api
+      .get<Prediction[]>("/history")
+      .then((response) => {
         if (active) {
-          setHistory(response.data);
+          setHistory(Array.isArray(response.data) ? response.data : []);
         }
-      } catch (error) {
-        console.error("Failed to load dashboard history", error);
+      })
+      .catch(() => {
         if (active) {
           setHistory([]);
         }
-      } finally {
+      })
+      .finally(() => {
         if (active) {
           setLoading(false);
         }
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        loadHistory();
-      }
-    };
-
-    loadHistory();
-    const intervalId = window.setInterval(loadHistory, 10000);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+      });
 
     return () => {
       active = false;
-      window.clearInterval(intervalId);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
   const fakeCount = history.filter((item) => item.result === "FAKE").length;
   const latest = history[0];
-  const chartData = latest?.frameTimeline ?? [
-    { frameIndex: 0, score: 0.12 },
-    { frameIndex: 1, score: 0.34 },
-    { frameIndex: 2, score: 0.68 },
-    { frameIndex: 3, score: 0.75 },
-  ];
 
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="glass-panel rounded-[32px] p-8">
-          <p className="text-sm uppercase tracking-[0.3em] text-cyber">Mission Control</p>
-          <h1 className="mt-3 font-display text-4xl font-bold">Forensic operations & dataset intelligence</h1>
-          <p className="mt-3 max-w-2xl text-slate-300">
-            Monitor detection volume, review forensic outputs, and track temporal confidence drift across local uploads and established research datasets.
-          </p>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Analyses" value={String(history.length)} hint="Videos processed in your workspace" />
-          <StatCard label="Flagged Fake" value={String(fakeCount)} hint="Videos classified as manipulated" />
-          <StatCard label="Real Videos" value={String(history.length - fakeCount)} hint="Authentic classifications" />
-          <StatCard label="Latest Confidence" value={`${latest?.confidence ?? 0}%`} hint="Confidence score of most recent run" />
-        </div>
-        <ConfidenceChart data={chartData} />
-        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="glass-panel rounded-[32px] p-6">
-            <h2 className="font-display text-2xl font-semibold">Latest Detection Snapshot</h2>
-            {latest ? (
-              <div className="mt-5 space-y-3 text-slate-300">
-                <p><span className="font-medium text-white">File:</span> {latest.filename}</p>
-                <p><span className="font-medium text-white">Verdict:</span> {latest.result}</p>
-                <p><span className="font-medium text-white">Confidence:</span> {latest.confidence}%</p>
-                <p><span className="font-medium text-white">Model mode:</span> {latest.modelMode}</p>
-                <p><span className="font-medium text-white">Captured:</span> {new Date(latest.createdAt).toLocaleString()}</p>
-              </div>
-            ) : (
-              <p className="mt-5 text-slate-300">
-                {loading ? "Loading analysis history..." : "No detections yet. Run an analysis and it will appear here automatically."}
-              </p>
-            )}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-widest text-indigo-900">
+              Overview
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+              Session Summary
+            </h1>
+            <p className="mt-1 text-sm text-zinc-600">
+              Summary of media analyses processed by the backend during your workspace sessions.
+            </p>
           </div>
-          <div className="glass-panel rounded-[32px] p-6">
-            <h2 className="font-display text-2xl font-semibold">Recent Analyses</h2>
-            <div className="mt-5 space-y-3">
-              {history.slice(0, 4).map((item) => (
-                <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-medium text-white">{item.filename}</p>
-                      <p className="text-sm text-slate-400">{new Date(item.createdAt).toLocaleString()}</p>
-                    </div>
-                    <div className={`rounded-full px-3 py-1 text-xs ${item.result === "FAKE" ? "bg-alert/20 text-alert" : "bg-cyber/20 text-cyber"}`}>
-                      {item.result}
-                    </div>
+          <Link
+            to="/"
+            className="inline-flex items-center self-start rounded bg-zinc-900 px-3.5 py-2 text-xs font-medium text-white hover:bg-zinc-800 sm:self-auto"
+          >
+            Analyze media
+          </Link>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Total Analyses" value={String(history.length)} hint="Videos processed by backend" />
+          <StatCard label="Flagged Fake" value={String(fakeCount)} hint="Classified as manipulated" />
+          <StatCard label="Authentic (Real)" value={String(history.length - fakeCount)} hint="Classified as authentic" />
+          <StatCard
+            label="Latest Confidence"
+            value={latest ? `${latest.confidence}%` : "—"}
+            hint={latest ? `From ${latest.filename}` : "No analyses recorded yet"}
+          />
+        </div>
+
+        {latest?.frameTimeline && latest.frameTimeline.length > 0 && (
+          <ConfidenceChart data={latest.frameTimeline} />
+        )}
+
+        <div className="surface-card p-6">
+          <h2 className="text-sm font-semibold text-zinc-900">Recent Analyses</h2>
+          {loading ? (
+            <p className="mt-3 text-xs text-zinc-500">Loading analysis records…</p>
+          ) : history.length === 0 ? (
+            <p className="mt-3 text-xs text-zinc-500">
+              No analyses recorded yet. Upload a video in the main workspace to generate a report.
+            </p>
+          ) : (
+            <div className="mt-4 divide-y divide-stone-200">
+              {history.slice(0, 6).map((item) => (
+                <Link
+                  key={item.id}
+                  to={`/results/${item.id}`}
+                  state={item}
+                  className="flex items-center justify-between gap-4 py-3 text-xs transition-colors hover:bg-stone-50"
+                >
+                  <div>
+                    <p className="font-mono font-medium text-zinc-900">{item.filename}</p>
+                    <p className="mt-0.5 font-mono text-zinc-500">
+                      {new Date(item.createdAt).toLocaleString()}
+                    </p>
                   </div>
-                </div>
+                  <span
+                    className={`rounded px-2 py-0.5 font-mono font-semibold ${
+                      item.result === "FAKE"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-emerald-100 text-emerald-800"
+                    }`}
+                  >
+                    {item.result} · {item.confidence}%
+                  </span>
+                </Link>
               ))}
-              {!loading && history.length === 0 && (
-                <p className="text-slate-300">Your analysis history is still empty. New prediction records will surface here after the backend stores them.</p>
-              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </AppShell>

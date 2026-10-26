@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     sequence_length: int = Field(20, alias="SEQUENCE_LENGTH")
     image_size: int = Field(224, alias="IMAGE_SIZE")
     max_upload_mb: int = Field(250, alias="MAX_UPLOAD_MB")
-    enable_mock_model: bool = Field(True, alias="ENABLE_MOCK_MODEL")
+    enable_mock_model: bool = Field(False, alias="ENABLE_MOCK_MODEL")
 
     @property
     def allowed_origins_list(self) -> list[str]:

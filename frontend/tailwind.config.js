@@ -6,22 +6,30 @@ export default {
   theme: {
     extend: {
       colors: {
-        night: "#07111f",
-        panel: "#0f1d31",
-        cyber: "#64f1d6",
-        alert: "#ff5e7d",
-        glow: "#60a5fa"
+        canvas: "#F7F6F2",
+        surface: "#FFFFFF",
+        subtle: "#EFECE6",
+        ink: "#18181B",
+        muted: "#52525B",
+        accent: "#1E293B",
+        indigoAccent: "#312E81",
+        // Legacy aliases mapped to restrained editorial palette for backward compatibility
+        night: "#F7F6F2",
+        panel: "#FFFFFF",
+        cyber: "#1E293B",
+        alert: "#B91C1C",
+        glow: "#312E81",
       },
       fontFamily: {
-        sans: ["Space Grotesk", "ui-sans-serif", "system-ui"],
-        display: ["Sora", "ui-sans-serif", "system-ui"]
+        sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
+        display: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       boxShadow: {
-        glass: "0 24px 80px rgba(5, 15, 35, 0.35)"
+        subtle: "0 1px 2px 0 rgba(24, 24, 27, 0.04)",
+        card: "0 1px 3px 0 rgba(24, 24, 27, 0.06), 0 1px 2px -1px rgba(24, 24, 27, 0.04)",
+        glass: "0 1px 3px 0 rgba(24, 24, 27, 0.06)",
       },
-      backgroundImage: {
-        mesh: "radial-gradient(circle at top left, rgba(100,241,214,0.18), transparent 30%), radial-gradient(circle at 80% 20%, rgba(96,165,250,0.18), transparent 28%), linear-gradient(135deg, #040b15 0%, #07111f 35%, #0d1830 100%)"
-      }
     },
   },
   plugins: [forms],

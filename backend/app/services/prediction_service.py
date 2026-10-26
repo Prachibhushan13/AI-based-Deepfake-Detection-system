@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from bson import ObjectId
@@ -7,30 +8,54 @@ from app.db.mongodb import predictions_collection
 from app.ml.gradcam import generate_heatmap_assets
 from app.ml.inference import predict_video
 from app.models.prediction import PredictionInDB
-from app.services.video_service import compress_video, extract_frames, save_upload
+from app.services.video_service import compress_video, extract_frames_with_metadata, save_upload
 from app.utils.serialization import serialize_document
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_prediction(document: dict) -> dict:
     normalized = serialize_document(document)
-    normalized.setdefault("modelMode", "mock")
+    normalized.setdefault("modelMode", "forensic_backbone")
     normalized.setdefault("suspiciousFrames", [])
+    normalized.setdefault("suspiciousFrameDetails", [])
     normalized.setdefault("heatmapFrames", [])
     normalized.setdefault("frameTimeline", [])
+    normalized.setdefault("videoMetadata", None)
     return normalized
 
 
 def analyze_video(file, user_id: str) -> dict:
+    logger.info("Starting video analysis for filename='%s', user_id='%s'", file.filename, user_id)
     saved_path = save_upload(file)
     compressed_path = compress_video(saved_path)
-    frames = extract_frames(compressed_path)
-    inference = predict_video(frames, filename=file.filename)
+    frames, video_metadata = extract_frames_with_metadata(compressed_path)
+    inference = predict_video(frames, filename=file.filename, video_metadata=video_metadata)
+
     asset_prefix = str(uuid.uuid4())
-    suspicious_paths, heatmap_paths = generate_heatmap_assets(
+    suspicious_paths, heatmap_paths, suspicious_details = generate_heatmap_assets(
         frames,
         inference["suspiciousIndices"],
         asset_prefix,
+        timeline=inference["timeline"],
     )
+
+    clean_video_meta = {
+        k: v
+        for k, v in video_metadata.items()
+        if k not in ("frameIndices", "timestamps")
+    }
+
+    logger.info(
+        "Completed inference for '%s': result=%s, confidence=%.2f%%, modelMode=%s, sampledFrames=%d, suspiciousFrames=%d",
+        file.filename,
+        inference["result"],
+        inference["confidence"],
+        inference["modelMode"],
+        len(frames),
+        len(suspicious_details),
+    )
+
     document = PredictionInDB(
         userId=user_id,
         filename=file.filename,
@@ -40,8 +65,10 @@ def analyze_video(file, user_id: str) -> dict:
         realProbability=inference["realProbability"],
         fakeProbability=inference["fakeProbability"],
         suspiciousFrames=suspicious_paths,
+        suspiciousFrameDetails=suspicious_details,
         heatmapFrames=heatmap_paths,
         frameTimeline=inference["timeline"],
+        videoMetadata=clean_video_meta,
         modelsComparison=inference.get("modelsComparison"),
         facesAnalysis=inference.get("facesAnalysis"),
         audioAnalysis=inference.get("audioAnalysis"),

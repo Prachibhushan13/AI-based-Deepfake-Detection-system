@@ -5,24 +5,56 @@ export type User = {
   role: "user" | "admin";
 };
 
+export type TimelinePoint = {
+  sampleIndex?: number;
+  frameIndex: number;
+  timestamp?: number;
+  timestampFormatted?: string;
+  score: number;
+  spatialScore?: number;
+  temporalScore?: number;
+};
+
+export type SuspiciousFrameDetail = {
+  slot: number;
+  sampleIndex: number;
+  frameIndex: number;
+  timestamp: number;
+  timestampFormatted: string;
+  score: number;
+  frameUrl: string;
+  heatmapUrl?: string;
+};
+
+export type VideoMetadata = {
+  fps: number;
+  totalFrames: number;
+  sampledFrames: number;
+  stride: number;
+  durationSeconds: number;
+  resolution: string;
+};
+
 export type Prediction = {
   id: string;
   filename: string;
-  modelMode: "mock" | "trained";
+  modelMode: "trained" | "trained_hybrid" | "trained_xception" | "transformers_vit" | "forensic_backbone" | string;
   result: "REAL" | "FAKE";
   confidence: number;
   realProbability: number;
   fakeProbability: number;
   suspiciousFrames: string[];
+  suspiciousFrameDetails?: SuspiciousFrameDetail[];
   heatmapFrames: string[];
-  frameTimeline: { frameIndex: number; score: number }[];
+  frameTimeline: TimelinePoint[];
+  videoMetadata?: VideoMetadata | null;
   modelsComparison?: {
-    CNN: { confidence: number; prediction: string; timeline: { frameIndex: number; score: number }[] };
-    LSTM: { confidence: number; prediction: string; timeline: { frameIndex: number; score: number }[] };
-    CNN_LSTM: { confidence: number; prediction: string; timeline: { frameIndex: number; score: number }[] };
+    CNN: { confidence: number; prediction: string; timeline: TimelinePoint[] };
+    LSTM: { confidence: number; prediction: string; timeline: TimelinePoint[] };
+    CNN_LSTM: { confidence: number; prediction: string; timeline: TimelinePoint[] };
   };
   facesAnalysis?: { faceId: number; fakeProbability: number; boundingBox?: number[] }[];
-  audioAnalysis?: { audioFakeProbability: number; lipSyncDiscrepancy: number };
+  audioAnalysis?: { audioFakeProbability: number; lipSyncDiscrepancy: number } | null;
   createdAt: string;
 };
 
@@ -40,11 +72,11 @@ export type LiveDetectionMessage =
       frameCount: number;
       requiredFrames: number;
       result: "REAL" | "FAKE";
-      modelMode?: "mock" | "trained";
+      modelMode?: string;
       confidence: number;
       fakeProbability: number;
       realProbability: number;
-      timeline: { frameIndex: number; score: number }[];
+      timeline: TimelinePoint[];
       suspiciousFrameCount: number;
       message: string;
     }

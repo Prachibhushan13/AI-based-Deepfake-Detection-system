@@ -4,10 +4,13 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .venv/
+.venv311/
 venv/
 node_modules/
 dist/
 build/
+frontend/tsconfig.tsbuildinfo
+datasets/Celeb-DF-v2/
 .env
 frontend/.env
 backend/.env

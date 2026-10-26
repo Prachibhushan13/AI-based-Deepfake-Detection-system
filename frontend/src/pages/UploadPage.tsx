@@ -1,322 +1,456 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Upload, X, RefreshCw, AlertCircle, Film, Loader2 } from "lucide-react";
 import { AppShell } from "../components/layout/AppShell";
+import { PredictionResultView } from "../components/PredictionResultView";
 import api from "../services/api";
-import type { LiveDetectionMessage } from "../types";
+import type { Prediction } from "../types";
 
-type Mode = "upload" | "live";
+const ALLOWED_EXTENSIONS = [".mp4", ".mov", ".avi", ".mkv"];
+const MAX_UPLOAD_MB = 250;
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
-function getSocketUrl() {
-  const apiBase = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
-  const root = apiBase.replace("/api/v1", "");
-  return `${root.replace("http://", "ws://").replace("https://", "wss://")}/api/v1/ws/live-detect`;
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(2)} MB`;
 }
 
-function buildLiveExplanation(result: Extract<LiveDetectionMessage, { type: "prediction" }>) {
-  const realPercent = result.realProbability * 100;
-  const fakePercent = result.fakeProbability * 100;
-  const averageTimelineScore = result.timeline.length
-    ? result.timeline.reduce((sum, point) => sum + point.score, 0) / result.timeline.length
-    : 0;
-  const elevatedFrames = result.timeline.filter((point) => point.score >= averageTimelineScore).length;
-  const stabilityScore = Math.max(0, Math.min(100, realPercent - result.suspiciousFrameCount * 4));
-
-  const verdictLine =
-    result.result === "REAL"
-      ? "The current sliding frame window looks more consistent with a natural face sequence than with a manipulated one."
-      : "The current sliding frame window shows stronger synthetic or inconsistent facial cues than a natural sequence.";
-
-  const evidenceLine =
-    result.result === "REAL"
-      ? `Real probability is ${realPercent.toFixed(1)}%, suspicious frames are limited to ${result.suspiciousFrameCount}, and the timeline does not show a strong cluster of repeated anomaly spikes.`
-      : `Fake probability is ${fakePercent.toFixed(1)}%, suspicious frames in the current window are ${result.suspiciousFrameCount}, and elevated timeline values suggest repeated anomaly cues instead of a single random spike.`;
-
-  const scaleLabel =
-    result.result === "REAL"
-      ? "Authenticity Scale"
-      : "Manipulation Risk Scale";
-
-  return {
-    realPercent,
-    fakePercent,
-    averageTimelineScore,
-    elevatedFrames,
-    stabilityScore,
-    verdictLine,
-    evidenceLine,
-    scaleLabel,
-  };
+function getFileExtension(filename: string): string {
+  const idx = filename.lastIndexOf(".");
+  return idx >= 0 ? filename.slice(idx).toLowerCase() : "";
 }
+
+function validateMediaFile(candidate: File): string | null {
+  const ext = getFileExtension(candidate.name);
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return `Unsupported file format "${ext || "unknown"}". Supported video formats: ${ALLOWED_EXTENSIONS.join(", ")}.`;
+  }
+  if (candidate.size === 0) {
+    return "The selected video file is empty (0 bytes). Please choose a valid video file.";
+  }
+  if (candidate.size > MAX_UPLOAD_BYTES) {
+    return `File size (${formatFileSize(candidate.size)}) exceeds the maximum backend limit of ${MAX_UPLOAD_MB} MB.`;
+  }
+  return null;
+}
+
+const WORKFLOW_STEPS = [
+  {
+    step: "01",
+    title: "Media Upload & Stream Validation",
+    description:
+      "The FastAPI backend validates the file extension (.mp4, .mov, .avi, .mkv) and size (up to 250 MB), writes the upload to local storage, and normalizes H.264 stream encoding when ffmpeg is available.",
+  },
+  {
+    step: "02",
+    title: "Frame Sampling & MTCNN Face Alignment",
+    description:
+      "OpenCV decodes the video stream at a stride of every 5th frame up to a 20-frame sequence. MTCNN locates facial bounding boxes and eye landmarks, rotates frames to align inter-ocular angle, and crops faces to 224×224.",
+  },
+  {
+    step: "03",
+    title: "CNN Spatial Feature Extraction",
+    description:
+      "Each normalized 224×224 facial crop is passed through a TimeDistributed CNN backbone (EfficientNetB0 / forensic feature extractor) with global average pooling to encode spatial texture and blending cues.",
+  },
+  {
+    step: "04",
+    title: "Bidirectional LSTM Temporal Analysis",
+    description:
+      "The 20-frame sequence of spatial embeddings is analyzed by stacked Bidirectional LSTM layers (128 and 64 units) with dropout regularization to detect temporal flicker and frame-to-frame inconsistency.",
+  },
+  {
+    step: "05",
+    title: "Classification & Confidence Output",
+    description:
+      "A sigmoid classification head outputs the manipulation probability (threshold 0.50), mapping the video to REAL or FAKE alongside the model confidence score, class probabilities, and frame-level timeline.",
+  },
+];
 
 export function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<Mode>("upload");
-  const [liveEnabled, setLiveEnabled] = useState(false);
-  const [liveStatus, setLiveStatus] = useState("Idle");
-  const [liveResult, setLiveResult] = useState<LiveDetectionMessage | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const socketRef = useRef<WebSocket | null>(null);
-  const navigate = useNavigate();
+  const [isDragging, setIsDragging] = useState(false);
+  const [result, setResult] = useState<Prediction | null>(null);
 
-  const overlayColor = useMemo(() => {
-    if (liveResult?.type !== "prediction") return "border-cyber/40 bg-slate-950/55";
-    return liveResult.result === "FAKE" ? "border-alert/60 bg-slate-950/65" : "border-cyber/60 bg-slate-950/65";
-  }, [liveResult]);
-  const liveExplanation = useMemo(
-    () => (liveResult?.type === "prediction" ? buildLiveExplanation(liveResult) : null),
-    [liveResult],
-  );
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const submit = async () => {
-    if (!file) return;
+  // Manage and revoke temporary object URLs cleanly
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
+
+  const handleSelectFile = (selected: File | null) => {
+    // Clear any prior prediction or error so stale results are never shown for a new file
+    setResult(null);
+    setApiError(null);
+
+    if (!selected) {
+      setFile(null);
+      setValidationError(null);
+      return;
+    }
+
+    const errorMsg = validateMediaFile(selected);
+    setFile(selected);
+    setValidationError(errorMsg);
+  };
+
+  const handleClearFile = () => {
+    setFile(null);
+    setValidationError(null);
+    setApiError(null);
+    setResult(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    if (loading) return;
+    const droppedFile = event.dataTransfer.files?.[0] ?? null;
+    if (droppedFile) {
+      handleSelectFile(droppedFile);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!file || loading || validationError) return;
+
     setLoading(true);
+    setApiError(null);
+    setResult(null);
+
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const { data } = await api.post("/predict", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+
+      const { data } = await api.post<Prediction>("/predict", formData, {
+        timeout: 180000,
       });
-      navigate(`/results/${data.id}`, { state: data });
+
+      if (!data || typeof data.result !== "string" || typeof data.confidence !== "number") {
+        throw new Error("Received an unexpected response structure from the prediction server.");
+      }
+
+      setResult(data);
+    } catch (err: any) {
+      let detail = "Analysis could not be completed. Verify that the backend server is running and try again.";
+      if (err?.code === "ECONNABORTED") {
+        detail = "The analysis request timed out while processing the video. Try a shorter video clip.";
+      } else if (err?.response?.data?.detail) {
+        const rawDetail = err.response.data.detail;
+        detail = Array.isArray(rawDetail)
+          ? rawDetail.map((item: any) => item.msg ?? JSON.stringify(item)).join("; ")
+          : String(rawDetail);
+      } else if (err?.message) {
+        detail = err.message;
+      }
+      setApiError(detail);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (!liveEnabled) return;
-
-    let intervalId: number | null = null;
-
-    const startLiveDetection = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 540 } },
-          audio: false,
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-
-        const token = localStorage.getItem("deepfake_token");
-        const ws = new WebSocket(`${getSocketUrl()}?token=${encodeURIComponent(token ?? "")}`);
-        socketRef.current = ws;
-
-        ws.onopen = () => {
-          setLiveStatus("Streaming webcam frames for live analysis.");
-          intervalId = window.setInterval(() => {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            if (!video || !canvas || ws.readyState !== WebSocket.OPEN || video.readyState < 2) return;
-            const context = canvas.getContext("2d");
-            if (!context) return;
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 360;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const frame = canvas.toDataURL("image/jpeg", 0.7);
-            ws.send(JSON.stringify({ type: "frame", data: frame }));
-          }, 200);
-        };
-
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data) as LiveDetectionMessage;
-          setLiveResult(data);
-          if (data.type !== "pong" && "message" in data) {
-            setLiveStatus(data.message);
-          }
-        };
-
-        ws.onerror = () => {
-          setLiveStatus("Live detection socket error. Please retry.");
-        };
-
-        ws.onclose = () => {
-          setLiveStatus("Live stream stopped.");
-        };
-      } catch (error) {
-        console.error(error);
-        setLiveStatus("Unable to access webcam. Check browser permissions.");
-      }
-    };
-
-    startLiveDetection();
-
-    return () => {
-      if (intervalId) window.clearInterval(intervalId);
-      socketRef.current?.close();
-      socketRef.current = null;
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-      setLiveResult(null);
-    };
-  }, [liveEnabled]);
-
   return (
     <AppShell>
-      <div className="space-y-6">
-        <div className="glass-panel rounded-[32px] p-8">
-          <p className="text-sm uppercase tracking-[0.3em] text-cyber">Dataset Showcase</p>
-          <h2 className="mt-3 font-display text-2xl font-bold">Explore actual results from forensic benchmarks</h2>
-          <p className="mt-2 text-slate-300 text-sm">
-            These results are derived from validated research datasets (Celeb-DF, FaceForensics++, DFDC) to demonstrate system performance on real-world deepfake signatures.
-          </p>
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { name: "FaceForensics++", desc: "4,000+ manipulated videos from various techniques.", count: 3 },
-              { name: "Celeb-DF", desc: "Large-scale dataset with high-quality facial swaps.", count: 3 },
-              { name: "DFDC (Preview)", desc: "Samples from the Facebook Deepfake Detection Challenge.", count: 2 },
-            ].map((ds) => (
-              <div key={ds.name} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/40 p-5 transition hover:border-cyber/50 hover:bg-slate-900/60">
-                <h3 className="font-semibold text-white group-hover:text-cyber">{ds.name}</h3>
-                <p className="mt-2 text-xs leading-5 text-slate-400">{ds.desc}</p>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-widest text-slate-500">{ds.count} Verified Results</span>
-                  <button 
-                    onClick={() => navigate("/history")}
-                    className="text-[10px] uppercase tracking-widest text-cyber hover:underline"
-                  >
-                    View History
-                  </button>
+      <div className="space-y-14">
+        {/* Main Analysis Workspace */}
+        <section id="analyze" className="scroll-mt-20">
+          <div className="max-w-2xl">
+            <p className="font-mono text-xs uppercase tracking-widest text-indigo-900">
+              Forensic Video Verification
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">
+              Verify what you see.
+            </h1>
+            <p className="mt-2.5 text-sm leading-relaxed text-zinc-600 sm:text-base">
+              Analyze a video for signs of synthetic manipulation using your existing deepfake detection model.
+            </p>
+          </div>
+
+          <div className="mt-6 surface-card p-6 sm:p-8">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".mp4,.mov,.avi,.mkv,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
+              onChange={(e) => handleSelectFile(e.target.files?.[0] ?? null)}
+              className="sr-only"
+              aria-label="Upload video file"
+            />
+
+            {!file ? (
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Select or drag and drop a video file to analyze"
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(false);
+                }}
+                onDrop={handleDrop}
+                className={`flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed px-6 py-12 text-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-900 ${
+                  isDragging
+                    ? "border-indigo-900 bg-indigo-950/5"
+                    : "border-stone-300 bg-[#FAF9F6] hover:border-zinc-500 hover:bg-stone-100/60"
+                }`}
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded border border-stone-200 bg-white text-zinc-700 shadow-sm">
+                  <Upload className="h-5 w-5" />
+                </div>
+                <p className="mt-4 text-sm font-medium text-zinc-900">
+                  Drag and drop a video file here, or{" "}
+                  <span className="underline decoration-zinc-400 underline-offset-4">
+                    browse your device
+                  </span>
+                </p>
+                <p className="mt-1.5 font-mono text-xs text-zinc-500">
+                  Supported formats: MP4, MOV, AVI, MKV · Maximum size: {MAX_UPLOAD_MB} MB
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <div className="flex flex-col justify-between gap-4 rounded-md border border-stone-200 bg-[#FAF9F6] p-4 sm:flex-row sm:items-center">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-stone-200 bg-white text-zinc-700">
+                      <Film className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-mono text-sm font-medium text-zinc-900" title={file.name}>
+                        {file.name}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-zinc-500">
+                        <span>Size: {formatFileSize(file.size)}</span>
+                        <span>·</span>
+                        <span>
+                          Type: {file.type || getFileExtension(file.name).toUpperCase().replace(".", "") || "Video"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-900 disabled:opacity-50"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Replace file
+                    </button>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={handleClearFile}
+                      className="inline-flex items-center gap-1.5 rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-red-50 hover:border-red-200 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-900 disabled:opacity-50"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                {/* Genuine Video Preview */}
+                {previewUrl && !validationError && (
+                  <div className="overflow-hidden rounded-md border border-stone-200 bg-zinc-950">
+                    <video
+                      key={previewUrl}
+                      src={previewUrl}
+                      controls
+                      preload="metadata"
+                      className="mx-auto max-h-80 w-full object-contain"
+                    >
+                      Your browser does not support embedded video playback.
+                    </video>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Validation Error */}
+            {validationError && (
+              <div
+                role="alert"
+                className="mt-4 flex items-start gap-2.5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-700" />
+                <div>
+                  <p className="font-semibold">File validation error</p>
+                  <p className="mt-0.5">{validationError}</p>
+                </div>
+              </div>
+            )}
+
+            {/* API / Processing Error */}
+            {apiError && (
+              <div
+                role="alert"
+                className="mt-4 flex items-start gap-2.5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-700" />
+                <div>
+                  <p className="font-semibold">Analysis failed</p>
+                  <p className="mt-0.5">{apiError}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Honest Loading Indicator */}
+            {loading && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="mt-5 flex items-center gap-3 rounded-md border border-stone-200 bg-[#FAF9F6] px-4 py-3.5 text-xs text-zinc-700"
+              >
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-indigo-900" />
+                <div>
+                  <p className="font-medium text-zinc-900">Analyzing media…</p>
+                  <p className="mt-0.5 text-zinc-500">
+                    Uploading file, sampling frames, detecting faces, and running CNN-LSTM sequence inference on the backend.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Bar */}
+            <div className="mt-6 flex flex-col gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-zinc-500">
+                Files are sent directly to your configured local endpoint (<code className="font-mono text-zinc-700">POST /api/v1/predict</code>).
+              </p>
+              <button
+                type="button"
+                onClick={handleAnalyze}
+                disabled={!file || Boolean(validationError) || loading}
+                className="inline-flex items-center justify-center gap-2 rounded bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-zinc-500"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Analyzing media…
+                  </>
+                ) : (
+                  "Analyze media"
+                )}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Prediction Results */}
+        {result && (
+          <section aria-live="polite" className="scroll-mt-20">
+            <PredictionResultView prediction={result} onAnalyzeAnother={handleClearFile} />
+          </section>
+        )}
+
+        {/* How It Works Section */}
+        <section id="how-it-works" className="scroll-mt-20 border-t border-stone-200 pt-12">
+          <div className="max-w-2xl">
+            <p className="font-mono text-xs uppercase tracking-widest text-indigo-900">
+              System Architecture
+            </p>
+            <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
+              How It Works
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+              Each uploaded video passes through a five-stage spatial-temporal pipeline on the FastAPI backend before returning a classification verdict.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {WORKFLOW_STEPS.map((item) => (
+              <div key={item.step} className="surface-card flex flex-col justify-between p-4">
+                <div>
+                  <span className="font-mono text-xs font-semibold text-indigo-900">
+                    Step {item.step}
+                  </span>
+                  <h3 className="mt-2 text-sm font-semibold text-zinc-900">{item.title}</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-zinc-600">{item.description}</p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
 
-        <div className="glass-panel rounded-[32px] p-8">
-          <p className="text-sm uppercase tracking-[0.3em] text-cyber">Custom Analysis</p>
-          <h2 className="mt-3 font-display text-2xl font-bold">Upload a video or use live webcam</h2>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setMode("upload");
-                setLiveEnabled(false);
-              }}
-              className={`rounded-full px-5 py-2 text-sm transition ${mode === "upload" ? "bg-cyber text-slate-950" : "border border-white/10 text-white"}`}
-            >
-              Upload Video
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("live")}
-              className={`rounded-full px-5 py-2 text-sm transition ${mode === "live" ? "bg-cyber text-slate-950" : "border border-white/10 text-white"}`}
-            >
-              Live Webcam
-            </button>
+          <div className="mt-4 rounded-md border border-stone-200 bg-[#EFECE6]/70 px-4 py-3 text-xs leading-relaxed text-zinc-600">
+            <strong className="font-medium text-zinc-800">Methodological note:</strong>{" "}
+            Automated deepfake detection is a probabilistic indicator rather than absolute proof of manipulation. Compression artifacts, low lighting, or extreme camera motion can influence frame-level scores.
           </div>
-        </div>
+        </section>
 
-        {mode === "upload" ? (
-          <div className="glass-panel rounded-[32px] p-8">
-            <div className="rounded-[28px] border border-dashed border-cyber/40 bg-slate-950/40 p-10 text-center">
-              <input type="file" accept=".mp4,.mov,.avi,.mkv" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-              <p className="mt-4 text-slate-300">Drag and drop or browse to upload a video for forensic analysis.</p>
-              <button type="button" onClick={submit} disabled={!file || loading} className="mt-6 rounded-full bg-cyber px-6 py-3 font-semibold text-slate-950">
-                {loading ? "Analyzing..." : "Run Deepfake Detection"}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-            <div className="glass-panel rounded-[32px] p-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="font-display text-2xl font-semibold">Live Webcam Detection</h2>
-                  <p className="mt-2 text-sm text-slate-300">Uses `getUserMedia()`, samples frames at ~5 fps, and streams them over WebSocket to the FastAPI backend.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setLiveEnabled((current) => !current)}
-                  className={`rounded-full px-5 py-2 text-sm font-semibold transition ${liveEnabled ? "bg-alert text-white" : "bg-cyber text-slate-950"}`}
-                >
-                  {liveEnabled ? "Stop Live Detection" : "Start Live Detection"}
-                </button>
-              </div>
-
-              <div className="relative mt-6 overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/60">
-                <video ref={videoRef} playsInline muted className="aspect-video w-full object-cover" />
-                <canvas ref={canvasRef} className="hidden" />
-                <div className={`absolute left-4 top-4 max-w-sm rounded-2xl border px-4 py-3 backdrop-blur ${overlayColor}`}>
-                  <p className="text-xs uppercase tracking-[0.25em] text-cyber">Live Confidence Overlay</p>
-                  {liveResult?.type === "prediction" ? (
-                    <div className="mt-3">
-                      <div className="flex items-center gap-3">
-                        <p className={`font-display text-2xl font-bold ${liveResult.result === "FAKE" ? "text-alert" : "text-cyber"}`}>
-                          {liveResult.result}
-                        </p>
-                        {liveResult.modelMode === "forensic_backbone" && (
-                          <span className="rounded-full border border-cyber/30 bg-cyber/10 px-2 py-0.5 text-[10px] text-cyber">
-                            Deep Analysis
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-sm text-slate-200">Confidence: {liveResult.confidence.toFixed(2)}%</p>
-                      <p className="mt-1 text-sm text-slate-300">Real probability: {(liveResult.realProbability * 100).toFixed(2)}%</p>
-                      <p className="mt-1 text-sm text-slate-300">Fake probability: {(liveResult.fakeProbability * 100).toFixed(2)}%</p>
-                      <p className="mt-1 text-sm text-slate-300">Window size: {liveResult.frameCount} frames</p>
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-sm text-slate-200">{liveStatus}</p>
-                  )}
-                </div>
-              </div>
+        {/* About Section */}
+        <section id="about" className="scroll-mt-20 border-t border-stone-200 pt-12">
+          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-widest text-indigo-900">
+                About DeepTrace
+              </p>
+              <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
+                Hybrid Spatial-Temporal Video Forensics
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-600">
+                DeepTrace combines convolutional spatial representation learning with recurrent sequence modeling to evaluate facial integrity across time. Rather than inspecting isolated still frames in a vacuum, the pipeline evaluates whether facial geometry, boundary blending, and texture remain coherent across consecutive sampled frames.
+              </p>
             </div>
 
-            <div className="space-y-6">
-              <div className="glass-panel rounded-[32px] p-6">
-                <h3 className="font-display text-xl font-semibold">Live Stream Status</h3>
-                <p className="mt-4 text-slate-300">{liveStatus}</p>
-                {liveResult?.type === "prediction" && liveExplanation && (
-                  <div className="mt-6 space-y-4 text-sm text-slate-300">
-                    <div>
-                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400">
-                        <span>{liveExplanation.scaleLabel}</span>
-                        <span>{liveResult.result === "REAL" ? `${liveExplanation.realPercent.toFixed(1)}% real` : `${liveExplanation.fakePercent.toFixed(1)}% fake`}</span>
-                      </div>
-                      <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10">
-                        <div
-                          className={`h-full ${liveResult.result === "REAL" ? "bg-cyber" : "bg-alert"}`}
-                          style={{ width: `${liveResult.result === "REAL" ? liveExplanation.realPercent : liveExplanation.fakePercent}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <p>{liveExplanation.verdictLine}</p>
-                    <p>{liveExplanation.evidenceLine}</p>
-
-                    <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-                      <p><span className="font-medium text-white">Stability score:</span> {liveExplanation.stabilityScore.toFixed(1)}/100</p>
-                      <p className="mt-2"><span className="font-medium text-white">Suspicious frames:</span> {liveResult.suspiciousFrameCount}</p>
-                      <p className="mt-2"><span className="font-medium text-white">Elevated timeline frames:</span> {liveExplanation.elevatedFrames}</p>
-                      <p className="mt-2"><span className="font-medium text-white">Inference mode:</span> sliding window of recent frames streamed from the browser</p>
-                    </div>
-
-                    <p className="text-xs leading-6 text-slate-400">
-                      A `REAL` indication is stronger when the real probability stays high, suspicious frames remain low, and the timeline avoids repeated high anomaly clusters across neighboring frames.
-                    </p>
-                  </div>
-                )}
-              </div>
-              <div className="glass-panel rounded-[32px] p-6">
-                <h3 className="font-display text-xl font-semibold">How It Works</h3>
-                <div className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
-                  <p>1. The browser captures a webcam `MediaStream` using WebRTC `getUserMedia()`.</p>
-                  <p>2. A hidden canvas samples the feed at roughly 5 fps and converts frames to base64 JPEG chunks.</p>
-                  <p>3. The frontend streams those chunks over WebSocket to FastAPI.</p>
-                  <p>4. The backend maintains a sliding frame window and runs inference repeatedly to update the overlay.</p>
+            <div className="surface-card p-5">
+              <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                Pipeline Specifications
+              </h3>
+              <dl className="mt-3 divide-y divide-stone-200 text-xs">
+                <div className="flex justify-between py-2">
+                  <dt className="text-zinc-600">Spatial Backbone</dt>
+                  <dd className="font-mono font-medium text-zinc-900">EfficientNetB0 / MobileNetV2</dd>
                 </div>
-              </div>
+                <div className="flex justify-between py-2">
+                  <dt className="text-zinc-600">Temporal Sequence Model</dt>
+                  <dd className="font-mono font-medium text-zinc-900">Bidirectional LSTM (128 → 64)</dd>
+                </div>
+                <div className="flex justify-between py-2">
+                  <dt className="text-zinc-600">Face Detector & Alignment</dt>
+                  <dd className="font-mono font-medium text-zinc-900">MTCNN (224×224 RGB)</dd>
+                </div>
+                <div className="flex justify-between py-2">
+                  <dt className="text-zinc-600">Sequence Window</dt>
+                  <dd className="font-mono font-medium text-zinc-900">20 frames (stride 5)</dd>
+                </div>
+                <div className="flex justify-between py-2">
+                  <dt className="text-zinc-600">Decision Threshold</dt>
+                  <dd className="font-mono font-medium text-zinc-900">0.50 (Sigmoid)</dd>
+                </div>
+              </dl>
             </div>
           </div>
-        )}
+        </section>
       </div>
     </AppShell>
   );

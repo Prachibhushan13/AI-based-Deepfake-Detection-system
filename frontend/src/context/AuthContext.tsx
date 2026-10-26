@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "../services/api";
+import api, { ensureSessionToken } from "../services/api";
 import type { User } from "../types";
 
 type AuthContextValue = {
@@ -12,10 +12,24 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const DEFAULT_WORKSPACE_USER: User = {
+  id: "workspace",
+  name: "DeepTrace Analyst",
+  email: "analyst@deeptrace.ai",
+  role: "user",
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem("deepfake_user");
-    return stored ? JSON.parse(stored) : null;
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return DEFAULT_WORKSPACE_USER;
+      }
+    }
+    return DEFAULT_WORKSPACE_USER;
   });
   const [loading, setLoading] = useState(false);
 
@@ -48,14 +62,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     localStorage.removeItem("deepfake_token");
     localStorage.removeItem("deepfake_user");
-    setUser(null);
+    setUser(DEFAULT_WORKSPACE_USER);
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("deepfake_token");
-    if (!token) {
-      setUser(null);
-    }
+    ensureSessionToken().then(() => {
+      const stored = localStorage.getItem("deepfake_user");
+      if (stored) {
+        try {
+          setUser(JSON.parse(stored));
+        } catch {
+          // keep default workspace user
+        }
+      }
+    });
   }, []);
 
   return (
@@ -72,4 +92,3 @@ export function useAuth() {
   }
   return context;
 }
-
